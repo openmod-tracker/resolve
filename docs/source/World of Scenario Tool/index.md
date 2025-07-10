@@ -105,6 +105,7 @@ Users who want to run pre-existing cases can save all necessary inputs from the 
 
 | ![RESOLVE Case Setup Macros](_images/256b1eb8c9c542258520545f2e529cbd.png) | ![RESOLVE Case Setup Macros](_images/fa539a0c4687d0970c68b3227fef4bb1.png) |
 |--------------------------------------------------------------------|--------------------------------------------------------------------|
+| | |
 
 Figure 02. RESOLVE Case Setup Macros
 
