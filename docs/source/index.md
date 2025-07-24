@@ -56,7 +56,6 @@ getting_started/index
 Initial Model Set-Up/index
 User Guide <user_guide/index>
 2025 CPUC IRP Files/index
-World of Scenario Tool/index
 Running Resolve/index
 RESOLVE Results Viewing/index
 FAQs/index

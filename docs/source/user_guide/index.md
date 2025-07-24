@@ -3,6 +3,7 @@
 ```{toctree}
 :hidden:
 
+scenario_tool
 creating_inputs
 creating_system
 creating_settings
