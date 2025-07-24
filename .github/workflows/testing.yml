@@ -1,4 +1,4 @@
-name: Run Resolve test case
+name: Run RESOLVE test case
 
 on:
   workflow_call:
@@ -26,7 +26,7 @@ jobs:
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends gcc python3-dev
 
-      - name: Create Resolve environment (Miniconda)
+      - name: Create RESOLVE environment (Miniconda)
         run: |
           conda env create -q -f environment-rtd.yml
 

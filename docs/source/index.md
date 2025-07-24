@@ -2,20 +2,20 @@
 hide-toc: true
 ---
 <!---
-Resolve documentation master file, created by
+RESOLVE documentation master file, created by
 sphinx-quickstart on Sun Feb 14 15:12:03 2021.
 You can adapt this file completely to your liking, but it should at least
 contain the root `toctree` directive.
 -->
 
-# Resolve
+# RESOLVE
 
-Welcome to the new `Resolve` documentation! These docs are periodically updated and improved for better user experience. 
+Welcome to the new `RESOLVE` documentation! These docs are periodically updated and improved for better user experience. 
 
-`Resolve` is a least-cost capacity expansion model that identifies optimal electricity supply portfolios through capacity 
+`RESOLVE` is a least-cost capacity expansion model that identifies optimal electricity supply portfolios through capacity 
 expansion and production simulation modeling. Optimal investment plans account for the capital costs of new resources, 
 the variable costs of reliably operating the grid, and additional values such as environmental attributes. 
-`Resolve` has been used to support resource planning and valuation for dozens of clients across North America.
+`RESOLVE` has been used to support resource planning and valuation for dozens of clients across North America.
 
 More detailed information along with relevant projects and reports that have leaned on RESOLVE can be found on
 [this webpage](https://www.ethree.com/tools/resolve/).
@@ -23,15 +23,15 @@ More detailed information along with relevant projects and reports that have lea
 
 ![resolve-baseball-card.png](_images/resolve-baseball-card.svg)
 
-`Resolve` was initially developed in 2014 to assess the investment needs of systems seeking to integrate large quantities of variable renewable 
-resources. In 2020, `Resolve` was re-developed from the ground up to study emerging questions around emerging technologies
+`RESOLVE` was initially developed in 2014 to assess the investment needs of systems seeking to integrate large quantities of variable renewable 
+resources. In 2020, `RESOLVE` was re-developed from the ground up to study emerging questions around emerging technologies
 (e.g., long-duration energy storage, electrolytic fuel production) thanks to funding by the California Energy Commission
 ([CEC EPC-19-056](https://www.energizeinnovation.fund/projects/assessing-long-duration-energy-storage-deployment-scenarios-meet-californias-energy-goals)).
 
 
-## `Resolve` Data Flow
+## `RESOLVE` Data Flow
 
-`Resolve` uses a combination of Excel spreadsheet, Jupyter notebooks, and Python scripts. 
+`RESOLVE` uses a combination of Excel spreadsheet, Jupyter notebooks, and Python scripts. 
 This documentation will briefly cover each step.
 
 ![resolve-data-flow.png](_images/resolve-data-flow.png)
@@ -44,13 +44,13 @@ Please file [bug reports on GitHub](https://github.com/e3-/resolve/issues/new/ch
 
 For support from E3 staff related to the 2022-23 CPUC IRP proceeding, use [this booking link](https://outlook.office365.com/owa/calendar/ResolveInstallSupport@ethree.com/bookings/)
 
-For any other questions or more information on `Resolve` and E3's other modeling tools, email us: <platform@ethree.com>.
+For any other questions or more information on `RESOLVE` and E3's other modeling tools, email us: <platform@ethree.com>.
 
 
 ### Kicking it off
 
-Now that we have some background on what `Resolve` is, let's 
-understand and walk through the steps of running `Resolve` and plan clean and reliable electric systems. 👷‍♂️🏗️
+Now that we have some background on what `RESOLVE` is, let's 
+understand and walk through the steps of running `RESOLVE` and plan clean and reliable electric systems. 👷‍♂️🏗️
 
 ```{toctree}
 :hidden:

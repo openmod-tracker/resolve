@@ -1,6 +1,6 @@
 # 1. `Component` Data
 
-`Components` are the fundamental building block of what `Resolve` models. All `Components` have attributes that 
+`Components` are the fundamental building block of what `RESOLVE` models. All `Components` have attributes that 
 can be set via the Scenario Tool. 
 
 | Class                 | Description                                                                                           |
@@ -14,7 +14,7 @@ can be set via the Scenario Tool.
 | PlanningReserveMargin | A Planning Reserve Margin (PRM) reliability accounting constraint, interacts with `ELCCSurface`.      |
 | Reserve               | Operating reserves, such as spin, regulation, load following.                                         |
 | Resource              | An `Asset` used for electric sector operations (e.g., thermal generator, battery, variable resource). |
-| TXPath                | `Resolve` uses a "transportation" ("pipe-and-bubble") model for transmission flows between zones.     |
+| TXPath                | `RESOLVE` uses a "transportation" ("pipe-and-bubble") model for transmission flows between zones.     |
 | Zone                  | A location, constrained by transmission, where loads & resources are located.                         |
 
 

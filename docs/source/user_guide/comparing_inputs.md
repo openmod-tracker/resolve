@@ -5,7 +5,7 @@ As a reminder, inputs are saved in the data folder that you specified on the "Co
 Within this data folder, you will find three subfolders:
 - `./interim/`: All data related to components of the system being modeled (e.g., generators)
 - `./profiles/`: Hourly load & generation profiles
-- `./settings/`: Resolve case settings (e.g., modeled years, active scenario tags, custom constraints)
+- `./settings/`: RESOLVE case settings (e.g., modeled years, active scenario tags, custom constraints)
 
 Given this structure, we can recommend several ways to track and verify that input changes you are making in the 
 Scenario Tool are working:

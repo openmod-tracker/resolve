@@ -7,7 +7,7 @@ A lot of this should only be one-time so please make sure that this process is c
 ## All about environments
 
 Python environments for this project should be thought of as isolated computational spaces 
-that will have the necessary configurations needed for you to run the specific project or model - which in this case is `Resolve`
+that will have the necessary configurations needed for you to run the specific project or model - which in this case is `RESOLVE`
 
 Environments help in setting up packages, dependencies, libraries etc by running a simpe command and do not require much computational 
 background and knowledge - thus enabling the usage of the product for a wide array of stakeholders. 
@@ -61,10 +61,10 @@ conda init zsh
 Earlier versions of macOS use `bash`, so replace `zsh` in the command above with `bash`.
 
 ## Creating Environments 
-Once you have `Anaconda` set-up and have the necessary `Resolve` files and folders you are ready
+Once you have `Anaconda` set-up and have the necessary `RESOLVE` files and folders you are ready
 to create environments.
 
-We will use the `conda` command to create an isolated environment for the Resolve to run within, without 
+We will use the `conda` command to create an isolated environment for the RESOLVE to run within, without 
 disturbing any other Python packages you may have already installed (see the [`conda` documentation](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html) for more details on conda environments).
 
 To create the `conda` environment, we will use the [`environment.yml`](https://github.com/e3-/kit/blob/main/environment.yml) 
@@ -86,9 +86,9 @@ Then, run the following command:
 ### Environments using Pycharm 
 
 It is also possible for users to directly use Pycharm as an interface to create and manage Python 
-based environments for Resolve.
+based environments for RESOLVE.
 
-Step 1: Navigate over to your Resolve specific folder on Pycharm - make sure that the file environment.yml is at
+Step 1: Navigate over to your RESOLVE specific folder on Pycharm - make sure that the file environment.yml is at
 the top of the directory
 
 Step 2: At the bottom left of your Pycharm Window, click on the terminal icon to open up the terminal.
@@ -113,7 +113,7 @@ as follows:
 Activating the environment would mean that you now have the virtual computing capabilities to run the model.
 If you would like to learn more about virtual environments and dependencies, supplemental information can be found [here](https://www.geeksforgeeks.org/python-virtual-environment/#:~:text=A%20Python%20Virtual%20Environment%20is,a%20virtual%20environment%20in%20Python)
 
-> In order to maintain compatability between different versions, and updates of Resolve, it is best practice to use 
+> In order to maintain compatability between different versions, and updates of RESOLVE, it is best practice to use 
 new environments for each new release. Environments do not interact with one another and this would make sure that the user
 is able to switch back and forth between different resolve versions with ease.
 
