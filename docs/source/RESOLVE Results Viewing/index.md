@@ -15,21 +15,21 @@ The package will consist of three components that will help users retrieve and e
 
 The results viewer is an excel based workbook that has inbuilt formulas and methods that digests the individual CSVs and provides comprehensive information on the entire system.
 
-Users can load specific case results into Results Viewer using (1) An interactive Jupyter notebook script (recommended) or (2) Excel based macros in the RV Workbook. Additional script is made available to aggregate hourly results which is totally optional and recommended if hourly data review is needed.
+Users can load specific case results into Results Viewer using an interactive Jupyter notebook script to aggregate annual results. An additional script is made available to aggregate hourly results which is totally optional and recommended if hourly data review is needed. Additionaly, all publicly shared cases have pre-loaded case results that can be found in the `Saved Case Results Viewer` folder.
 
-## Option 1: Using the interactive Jupyter Notebook:
+## Using the interactive Jupyter Notebook to Load Annual Case Results
 
-Within the RESOLVE package, users can find a Jupyter notebook script called “RV_script.ipynb” – it is recommended that users use a Python version greater than v3.7.0 to use this.
+Users can find a Jupyter notebook script called “RV_script.ipynb” within the "Notebooks" directory of the repository. It is recommended that users use a Python version greater than v3.7.0 to use this.
 
 Once the script is opened using Jupyter Notebook or Jupyterhub, users can work with this without having to reactivate the environment or related dependencies. Note that the script is designed to work independently.
 
-As you run the first couple blocks of code, you will be asked to enter the file path of results folder and the Results Viewer Workbook itself, which will be a part of the package as well.
+As you run the first couple blocks of code, you will be asked to enter the file path of results folder and the Results Viewer Workbook itself, which will be a part of the package as well. Please note that any new case that you run, you should make sure the results are saved in the `results` folder.
 
 This is what that selection process should look like:
 
 ![Path selection for RESOLVE Results Viewer template and Case results folder](_images/c2eb90cc8d2d1e10a869aeb90ba893e6.png)
 
-Once you have confirmed the selection, you would need to add the name of the case and the timestamp of it that you want loaded, this input would go here:
+Once you have confirmed the path selections, you would need to add the subfolder names of the case (typically the name of the case and the timestamp) that you want loaded. These inputs would go here:
 
 ![Example of case results sufolder names](_images/65aa4f936e8f28af02ced7c79cae48e3.png)
 
@@ -47,9 +47,6 @@ After this the users can find the Results viewer in the folder specified.
 
 Note that this is a computationally intense process and depending on the size of the case can take about 30 minutes to load one case.
 
-## Option 2: Excel macros in the Results Viewer
-Coming Soon!
-
 ## Optional Hourly Results Processing Jupyter Notebook
 
 In addition to viewing annual results, one may be interested in viewing and analyzing hourly model results. This is only possible if the “report_hourly_results” argument in the attributes.csv file for the case is set to TRUE, which tells RESOLVE whether to save hourly results to the case reports folder. If hourly results are included in the case reports folder, you can analyze them with the “RESOLVE Hourly Results Viewer.ipynb” Jupyter notebook within the “notebooks” directory of the kit repository.
@@ -60,4 +57,4 @@ The user then has the option to export hourly load-resource balance results (tha
 
 ![Example of hourly results aggregation and dispatch plots](_images/aafe6b90a4ee192e3b380fdccfafcea1.emf)
 
-Figure 1. Example of hourly results aggregation and dispatch plots
+Example of hourly results aggregation and dispatch plots

@@ -1,4 +1,4 @@
-# 3. Define Case Settings
+# Define Case Settings
 
 This page will discuss the various settings that can be toggled in a `RESOLVE` run. 
 Most settings on the "RESOLVE Settings" tab are formula-linked to pre-populated settings on the "Case List" tab. 

@@ -1,4 +1,4 @@
-## 2025 CPUC IRP Files
+## 2025 CPUC Filing Requirements Files
 
 The core of the RESOLVE public package includes the following content that the user may directly need to use:
 

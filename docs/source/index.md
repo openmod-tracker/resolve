@@ -23,10 +23,7 @@ More detailed information along with relevant projects and reports that have lea
 
 ![resolve-baseball-card.png](_images/resolve-baseball-card.svg)
 
-`RESOLVE` was initially developed in 2014 to assess the investment needs of systems seeking to integrate large quantities of variable renewable 
-resources. In 2020, `RESOLVE` was re-developed from the ground up to study emerging questions around emerging technologies
-(e.g., long-duration energy storage, electrolytic fuel production) thanks to funding by the California Energy Commission
-([CEC EPC-19-056](https://www.energizeinnovation.fund/projects/assessing-long-duration-energy-storage-deployment-scenarios-meet-californias-energy-goals)).
+`RESOLVE` wwas initially developed in 2014 to assess the investment needs of systems seeking to integrate large quantities of variable renewable resources. Since then, many new modeling features and developments are done to enhance the modeling capabilities. The latest version is RESOLVE 3.0, released in summer 2025.
 
 
 ## `RESOLVE` Data Flow
@@ -71,6 +68,8 @@ FAQs/index
 :hidden:
 
 2022-23 CPUC IRP PSP <https://www.cpuc.ca.gov/industries-and-topics/electrical-energy/electric-power-procurement/long-term-procurement-planning/2022-irp-cycle-events-and-materials>
+
+2024-2026 IRP Cycle <https://www.cpuc.ca.gov/industries-and-topics/electrical-energy/electric-power-procurement/long-term-procurement-planning/2024-26-irp-cycle-events-and-materials>
 :::
 
 :::{toctree}

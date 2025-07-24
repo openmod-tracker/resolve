@@ -71,7 +71,7 @@ To create the `conda` environment, we will use the [`environment.yml`](https://g
 file at the top level of the repository. Open your shell of choice and navigate into your cloned copy of the repository.
 Then, run the following command:
 
--  Create an environment called `resolve-env`:
+-  Create an environment:
     ```bash
     conda env create -f environment.yml
     ```

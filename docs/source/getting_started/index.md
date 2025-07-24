@@ -48,9 +48,9 @@ the contents of the model seamlessly.
   - Cloning is especially helpful as it helps keep track of changes to files/folders, maintain version control and revert back to
 original files if need be. 
 
-:::{admonition} 2023 CPUC IRP {octicon}`zap`
-Stakeholders for the 2023 California Public Utilities Integrated Resource Planning (2023 CPUC IRP) process can download 
-`RESOLVE` and additional data, ruling case results directly from the [2022-23 IRP Events & Materials page](https://www.cpuc.ca.gov/industries-and-topics/electrical-energy/electric-power-procurement/long-term-procurement-planning/2022-irp-cycle-events-and-materials).
+:::{admonition} 2025-2026 CPUC IRP {octicon}`zap`
+Stakeholders for the 2025-2026 California Public Utilities Integrated Resource Planning (2025-2026 CPUC IRP) process can download 
+`RESOLVE` and additional data, ruling case results directly from the [2022-23 IRP Events & Materials page](https://www.cpuc.ca.gov/industries-and-topics/electrical-energy/electric-power-procurement/long-term-procurement-planning/2024-26-irp-cycle-events-and-materials).
 :::
 
 ---
@@ -118,7 +118,7 @@ Once you've downloaded or cloned the RESOLVE package, you should see (at a minim
 
 * **LICENSE.md:** GNU AGPLv3 open-source license used for `RESOLVE`
   * **data/:** Data folder for any pre-existing data & case settings
-  * **src/resolve/:** `RESOLVE` source code
+  * **new_modeling_toolkit/:** `RESOLVE` source code
 * **environment.yml:** Python environment settings
 * **pyproject.toml:** Python dependencies
 * **User Guide** {bdg-warning}`.pdf`

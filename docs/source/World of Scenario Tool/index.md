@@ -54,7 +54,7 @@ Your cover tab should look something like this:
 
 ![Example of Cover Sheet Settings in Scenario Tool](_images/d790f357cf18ca01a6aa21c77ec04962.png)
 
-Figure 01 Example of Cover Sheet Settings in Scenario Tool
+Example of Cover Sheet Settings in Scenario Tool
 
 With this, the initial set-up phase of the Scenario tool should be completed, and the user should be able to make changes/updates to the scenario tool and run cases.
 
@@ -64,7 +64,7 @@ The main data are organized in RESOLVE upstream workbooks, most importantly, the
 
 ![Illustration of data flow from upstream workbooks to RESOLVE Scenario Tool](_images/85fa70b0b069f5db5c2e6c0606aa4e2a.png)
 
-Figure 01 Illustration of data flow from upstream workbooks to RESOLVE Scenario Tool
+Illustration of data flow from upstream workbooks to RESOLVE Scenario Tool
 
 ## Structure & Tabs of the Scenario Tool
 
@@ -107,7 +107,7 @@ Users who want to run pre-existing cases can save all necessary inputs from the 
 |--------------------------------------------------------------------|--------------------------------------------------------------------|
 | | |
 
-Figure 02. RESOLVE Case Setup Macros
+RESOLVE Case Setup Macros
 
 1.  Save the System Data via the Export System Data to CSV macro button. This will take about 20 minutes for all the data in all tabs to be saved in the “data” folder. Running this macro is needed everything data updates are introduced to the Scenario Tool.
 
@@ -135,4 +135,4 @@ Here are some general tips to have in mind when updating the Scenario Tool or se
 
     ![Example of a RESOLVE Candidate Assets Worksheet ](_images/f6ec5766658051e7c5b5c506d4e9618f.png)
 
-Figure 03. Example of a RESOLVE Candidate Assets Worksheet
+Example of a RESOLVE Candidate Assets Worksheet
