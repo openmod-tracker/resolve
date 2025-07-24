@@ -10,9 +10,7 @@ As an initial step, make sure that the Scenario tool is in the directory of the 
 
 ![xlwings settings in Scenario Tool](_images/9605b5f4325425ea339e296be27c1a79.png)
 
-**Windows Excel**
-
-**Configure Python Path:**
+**Windows Excel Configure Python Path:**
 
 1.  Open Command Prompt or PowerShell and activate the environment with the command `conda activate resolve-env`
 
@@ -25,9 +23,7 @@ As an initial step, make sure that the Scenario tool is in the directory of the 
 ⚠️**Warning**  
 Make sure to use a backslash \\ (and not a forward slash /) on Windows for the Python path.
 
-**macOS Excel**
-
-**Configure Python Path:**
+**MacOS Excel Configure Python Path:**
 
 1.  Open Terminal and activate the environment with the command `conda activate resolve-env`
 
