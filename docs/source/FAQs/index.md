@@ -20,7 +20,7 @@
 |-----------------|--------------------------------------------------------------------------|
 | Thermal         | Fuel, heat rate slope and intercept, variable O&M. Example: biomass and biogas resources                                                  |
 | Unit Commitment | Fuel, heat rate slope and intercept, ramp rate, startup and shutdown costs, variable O&M Example: combined cycles and combustion turbines |
-| Generic         | Variable O&M, curtailable flag, production profile (optional) Example: Geothermal                                                         |
+| Generic         | Variable O&M, curtailable flag, curtailment costs, production profile (optional) Example: Geothermal                                                         |
 | Solar           | Production profile, curtailable flag, curtailment costs                                                                                   |
 | Wind            | Production profile, curtailable flag, curtailment costs                                                                                   |
 | Storage         | Duration, charging efficiency, discharge efficiency, parasitic losses, inter-period sharing flag                                          |

@@ -1,4 +1,4 @@
-# 2. Configure a System
+# Configure a System
 
 The "System" tab defines the energy system being modeled, which is composed of a list of various modeling components
 (loads, resource, policies, etc.). This tab will have any pre-populated system configurations in the yellow table(s) 

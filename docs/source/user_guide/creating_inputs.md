@@ -1,4 +1,4 @@
-# 1. `Component` Data
+# `Component` Data
 
 `Components` are the fundamental building block of what `RESOLVE` models. All `Components` have attributes that 
 can be set via the Scenario Tool. 

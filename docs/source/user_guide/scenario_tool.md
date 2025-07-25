@@ -20,8 +20,9 @@ As an initial step, make sure that the Scenario tool is in the directory of the 
       
     Paste this path into the **Python Path** cell.
 
-⚠️**Warning**  
+:::{admonition} ⚠️**Warning**  
 Make sure to use a backslash \\ (and not a forward slash /) on Windows for the Python path.
+:::
 
 **MacOS Excel Configure Python Path:**
 
@@ -35,8 +36,9 @@ Make sure to use a backslash \\ (and not a forward slash /) on Windows for the P
       
     Paste this path into the **Python Path** cell.
 
-⚠️**Warning**  
+:::{admonition}⚠️**Warning**  
 Make sure to use a forward slash / (and not a backslash \\) on macOS for the Python path.
+:::
 
 For example, if you are using windows, open the command terminal and activate the environment. In this instance, the environment is called cpuc-irp
 
