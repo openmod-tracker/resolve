@@ -1,4 +1,4 @@
-## 2025 CPUC Filing Requirements Files
+## 2024-2026 CPUC RESOLVE Package Files
 
 The core of the RESOLVE public package includes the following content that the user may directly need to use:
 
@@ -15,3 +15,8 @@ The core of the RESOLVE public package includes the following content that the u
 | RESOLVE Day Sampling Script       | This script was used to create sample days in RESOLVE. Sampled days are included in the Scenario Tool, so users should not need to interact with this script unless interested. |
 
 Additional workbooks may also be included in a RESOLVE package if CPUC desired. In the past, some of the upstream workbooks such as baseline resource data workbook, candidate resource cost and potential workbooks have made available along with a RESOLVE typical package.
+
+:::{admonition} 2025-2026 CPUC IRP {octicon}`zap`
+Stakeholders for the 2025-2026 California Public Utilities Integrated Resource Planning (2025-2026 CPUC IRP) process can download 
+`RESOLVE` and additional data, ruling case results directly from the [2024-26 IRP Events & Materials page](https://www.cpuc.ca.gov/industries-and-topics/electrical-energy/electric-power-procurement/long-term-procurement-planning/2024-26-irp-cycle-events-and-materials).
+:::

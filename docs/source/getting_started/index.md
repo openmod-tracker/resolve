@@ -13,7 +13,7 @@ This page goes through instructions to set up RESOLVE on your local computer.
   - macOS: Has been tested on macOS Big Sur (macOS 11) and above.
   - Linux: Has been run on Ubuntu, but other distributions may work. Notably, Excel Scenario Tool does **not** work 
     (since Excel is not available on Linux)
-- Python: 3.9+ (via Anaconda distribution)
+- Python: versions of >=3.10 and <3.12  (via Anaconda distribution)
 - Excel: Excel for Microsoft 365, Excel 2021, or later
 ---
 
@@ -30,7 +30,7 @@ distribution platform for working in python.
 
 Depending on your operating system and local computer configurations, detailed instructions for set-up and installation can be found on this [website](https://docs.anaconda.com/anaconda/install/)
 
-It is important to note there are other available platforms as well - as long as you have Python 3.9 + installed, you should be good. 
+It is important to note there are other available platforms as well - as long as you have Python >=3.10, <3.12 installed, you should be good. 
 
 ---
 
@@ -50,7 +50,7 @@ original files if need be.
 
 :::{admonition} 2025-2026 CPUC IRP {octicon}`zap`
 Stakeholders for the 2025-2026 California Public Utilities Integrated Resource Planning (2025-2026 CPUC IRP) process can download 
-`RESOLVE` and additional data, ruling case results directly from the [2022-23 IRP Events & Materials page](https://www.cpuc.ca.gov/industries-and-topics/electrical-energy/electric-power-procurement/long-term-procurement-planning/2024-26-irp-cycle-events-and-materials).
+`RESOLVE` and additional data, ruling case results directly from the [2024-26 IRP Events & Materials page](https://www.cpuc.ca.gov/industries-and-topics/electrical-energy/electric-power-procurement/long-term-procurement-planning/2024-26-irp-cycle-events-and-materials).
 :::
 
 ---
@@ -112,15 +112,3 @@ and click OK. This enables you to work with existing files and/or circumvent the
 
 ----
 
-## Files & Data Structure 
-
-Once you've downloaded or cloned the RESOLVE package, you should see (at a minimum) the following files & sub-folders:
-
-* **LICENSE.md:** GNU AGPLv3 open-source license used for `RESOLVE`
-  * **data/:** Data folder for any pre-existing data & case settings
-  * **new_modeling_toolkit/:** `RESOLVE` source code
-* **environment.yml:** Python environment settings
-* **pyproject.toml:** Python dependencies
-* **User Guide** {bdg-warning}`.pdf`
-* **Scenario Tool** {bdg-info}`.xlsm`
-* **Results Viewer** {bdg-info}`.xlsm`
