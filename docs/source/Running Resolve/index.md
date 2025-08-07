@@ -27,9 +27,9 @@ If you plan to run Resolve via a command line/terminal, use the following instru
 1. In a command line (e.g., Command Prompt), navigate into the ./new_modeling_toolkit/resolve directory
 1. Activate resolve-env conda environment: ``` conda activate resolve-env ```
 1. Use the command python run_opt.py to run a case. The run_opt.py script accepts the following arguments:
-  ```--data-folder```: The name of your data folder (if different than the default .\data)
-  ```--solver-name```: The name of the solver to use (e.g., gurobi, cplex, amplxpress, appsi_highs
-  ```--symbolic-solver-labels```: Enable descriptive variable names in the Pyomo model formulation–helpful for debugging but not recommended to use as a default.
+-  ```--data-folder```: The name of your data folder (if different than the default .\data)
+-  ```--solver-name```: The name of the solver to use (e.g., gurobi, cplex, amplxpress, appsi_highs
+- ```--symbolic-solver-labels```: Enable descriptive variable names in the Pyomo model formulation–helpful for debugging but not recommended to use as a default.
 
 ```{tip}
 If for the installation process, you had used Pycharm or any other platforms, then the recommended best practice is to open a terminal from there and run the same commands.
