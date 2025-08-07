@@ -23,7 +23,7 @@ As you run the first couple blocks of code, you will be asked to enter the file 
 
 ![Path selection for RESOLVE Results Viewer template and Case results folder](_images/2c6f3edd7cda9192962652f8a214a64f.png)
 
-Once you have confirmed the path selections, you would need to add the subfolder names of the case (typically the name of the case and the timestamp) that you want loaded. These inputs would go here:
+Once you have confirmed the path selections, you would need to add the subfolder names of the case (typically the name of the case and the timestamp) that you want loaded. These inputs will go here:
 
 ![Example of case results sufolder names](_images/65aa4f936e8f28af02ced7c79cae48e3.png)
 

@@ -1,4 +1,4 @@
-## 2024-2026 CPUC RESOLVE Package Files
+## RESOLVE Package Important Files
 
 The core of the RESOLVE public package includes the following content that the user may directly need to use:
 
