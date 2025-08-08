@@ -39,14 +39,10 @@ In addition to viewing annual results, one may be interested in viewing and anal
 
 ![RESOLVE dialog box where user can choose case and hourly results.](_images/8e741d826c6d418510f0afe91d88354f.png)
 
-The hourly results viewer notebook provides a workflow for analyzing and visualizing hourly and chronological dispatch results from RESOLVE model outputs. The user is guided to select a local directory containing RESOLVE case results and a destination folder for output via interactive file choosers. It is recommended that the case results be stored on a local drive rather than cloud to increase the speed of importing the results into the notebook. If you would like to aggregate certain resources into aggregate groups for analysis, the user can optionally select an Excel Results Viewer workbook, which should contain two named ranges on the `Results Groupings` worksheet: one for assigning resources to "Build Groups" and another for defining color settings and chart ordering for those groups. This setup enables streamlined downstream plotting of dispatch data either by grouped resource types or individual resources.
-
-![Colors and build group setup in Results Viewer](_images/a9e5f769410f85539fc45c298935ad71.png)
-
-The user then has the option to export hourly load-resource balance results (i.e., generation, load, zonal imports and exports, and battery charge and discharge results) for each specified zone and modeled year. Moreover, one can create hourly dispatch plots for a specified dispatch window (a.k.a. representative period) as shown with an example below.
-
+The hourly results viewer notebook provides a workflow for analyzing and visualizing hourly and chronological dispatch results from RESOLVE model outputs. The user is guided to select a local directory containing RESOLVE case results and a destination folder for output via interactive file choosers. It is recommended that the case results be stored on a local drive rather than cloud to increase the speed of importing the results into the notebook. If you would like to aggregate certain resources into aggregate groups for analysis, the user can optionally select an Excel Results Viewer workbook, which should contain two named ranges on the `Results Groupings` worksheet: one for assigning resources to "Build Groups" and another for defining color settings and chart ordering for those groups. This setup enables streamlined downstream plotting of dispatch data either by grouped resource types or individual resources. The user then has the option to export hourly load-resource balance results (i.e., generation, load, zonal imports and exports, and battery charge and discharge results) for each specified zone and modeled year. Moreover, one can create hourly dispatch plots for a specified zone, model year and dispatch window (a.k.a. representative period) as shown with an example below.
+![Options to set for dispatch chart view](_images/f72f141262d258148e732e0ffe021e6d.png)
 ![Example Dispatch Chart](_images/923796f9979f67abf68108bf8a1bf5c5.png)
 
 For hourly dispatch charts, the resource aggregation and color coding is defined in the Excel Results Viewer workbook.
 
-![Options to set for dispatch chart view](_images/f72f141262d258148e732e0ffe021e6d.png)
+![Colors and build group setup in Results Viewer](_images/a9e5f769410f85539fc45c298935ad71.png)
