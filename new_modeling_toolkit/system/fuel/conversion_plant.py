@@ -2,8 +2,8 @@ from typing import Optional
 
 import pandas as pd
 import pyomo.environ as pyo
-from pydantic import confloat
 from pydantic import Field
+from typing_extensions import Annotated
 
 from new_modeling_toolkit.common.asset.plant import Plant
 from new_modeling_toolkit.core.temporal import timeseries as ts
@@ -17,7 +17,7 @@ class FuelConversionPlant(Plant):
         ..., description="Name of the CandidateFuel that is produced by the plant"
     )
 
-    conversion_efficiency: confloat(ge=0, le=1) = Field(
+    conversion_efficiency: Annotated[float, Field(ge=0, le=1)] = Field(
         ..., description="Conversion efficiency of the plant, MMBtu output / MMBtu input"
     )
 
@@ -38,7 +38,7 @@ class FuelConversionPlant(Plant):
                 f"the plant's linked candidate fuels"
             )
 
-        return self.candidate_fuels[self.consumed_candidate_fuel_name]._instance_to
+        return self.candidate_fuels[self.consumed_candidate_fuel_name].instance_to
 
     @property
     def produced_candidate_fuel(self):
@@ -48,7 +48,7 @@ class FuelConversionPlant(Plant):
                 f"the plant's linked candidate fuels"
             )
 
-        return self.candidate_fuels[self.produced_candidate_fuel_name]._instance_to
+        return self.candidate_fuels[self.produced_candidate_fuel_name].instance_to
 
     opt_annual_fuel_consumption_by_fuel_mmbtu: Optional[pd.Series] = Field(
         None,

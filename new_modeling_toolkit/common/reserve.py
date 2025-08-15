@@ -10,8 +10,6 @@ from new_modeling_toolkit.core.temporal import timeseries as ts
 
 
 class Reserve(component.Component):
-    class Config:
-        validate_assignment = True
 
     direction: str = ""
     exclusive: bool = True

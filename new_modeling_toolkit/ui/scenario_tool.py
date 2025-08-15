@@ -50,6 +50,7 @@ def save_attributes_files(
         data_folder = upath.UPath(wb.fullname).parent / "data"
 
     data_folder = upath.UPath(data_folder) / "interim"
+    data_folder.mkdir(parents=True, exist_ok=True)
 
     # Locate components & class definitions
     filter = "Resolve-only" if model == "recap" else "Recap-only"
@@ -93,13 +94,12 @@ def save_attributes_files(
                     ]
                 )
             else:
-                wb.app.status_bar = f"{sheet_name} not found in current Scenario Tool"
+                logger.warning(f"{sheet_name} not found in current Scenario Tool")
 
         # Save to CSV
-        if not data.empty:
-            component_class.save_instance_attributes_csvs(
-                wb=wb, data=data, save_path=data_folder / f"{save_path}", overwrite=overwrite
-            )
+        component_class.save_instance_attributes_csvs(
+            wb=wb, data=data, save_path=data_folder / f"{save_path}", overwrite=overwrite
+        )
 
     # Clear status bar
     wb.app.status_bar = None
@@ -139,85 +139,81 @@ def save_linkages_csv(*, model, wb: Optional["Book"] = None, data_folder: Option
         other_column_first,
     ) in linkage_sheets:
         wb.app.status_bar = f"Saving {linkage} from {sheet}"
-        if sheet in [sheet_obj.name for sheet_obj in wb.sheets]:
-            if column_type == "TupleColumn":
-                df = wb.sheets[sheet].range(named_range).options(pd.DataFrame, ndim=2, index=False, header=False).value
-                df.columns = [0, 1]
-            elif column_type == "BooleanColumn":
-                rngs = [
-                    wb.sheets[sheet]
-                    .range(other_column_named_range)
-                    .options(pd.DataFrame, ndim=2, index=False, header=False)
-                    .value,
-                    wb.sheets[sheet].range(named_range).options(pd.DataFrame, ndim=2, index=False, header=False).value,
-                ]
-                if not other_column_first:
-                    rngs = rngs[::-1]
-                df = pd.concat(
-                    rngs,
-                    axis=1,
-                )
+        if column_type == "TupleColumn":
+            df = wb.sheets[sheet].range(named_range).options(pd.DataFrame, ndim=2, index=False, header=False).value
+            df.columns = [0, 1]
+        elif column_type == "BooleanColumn":
+            rngs = [
+                wb.sheets[sheet]
+                .range(other_column_named_range)
+                .options(pd.DataFrame, ndim=2, index=False, header=False)
+                .value,
+                wb.sheets[sheet].range(named_range).options(pd.DataFrame, ndim=2, index=False, header=False).value,
+            ]
 
-                # Rename columns
-                df.columns = [0] + wb.sheets[sheet].range(named_range).offset(row_offset=-3).resize(row_size=1).options(
-                    ndim=1
-                ).value
+            df = pd.concat(
+                rngs,
+                axis=1,
+            )
 
-                # Replace `True` values with name of columns
-                df.iloc[:, 1:] = df.iloc[:, 1:].replace(True, pd.Series(df.columns, df.columns))
+            # Rename columns
+            df.columns = [0] + wb.sheets[sheet].range(named_range).offset(row_offset=-3).resize(row_size=1).options(
+                ndim=1
+            ).value
 
-                df["linkage"] = linkage
-            elif column_type == "NameColumn":
-                rngs = [
-                    wb.sheets[sheet]
-                    .range(other_column_named_range)
-                    .options(pd.DataFrame, ndim=2, index=False, header=False)
-                    .value,
-                    wb.sheets[sheet].range(named_range).options(pd.DataFrame, ndim=2, index=False, header=False).value,
-                ]
-                df = pd.concat(
-                    rngs,
-                    axis=1,
-                )
-                df.iloc[:, 1] = df.iloc[:, 1].replace(
-                    True, wb.sheets[sheet].range(named_range).offset(row_offset=-3).resize(1, 1).value
-                )
+            # Replace `True` values with name of columns
+            df.iloc[:, 1:] = df.iloc[:, 1:].replace(True, pd.Series(df.columns, df.columns))
 
-                # Rename columns
-                df.columns = [0] + ([linkage] * wb.sheets[sheet].range(named_range).shape[1])
+            df["linkage"] = linkage
+        elif column_type == "NameColumn":
+            rngs = [
+                wb.sheets[sheet]
+                .range(other_column_named_range)
+                .options(pd.DataFrame, ndim=2, index=False, header=False)
+                .value,
+                wb.sheets[sheet].range(named_range).options(pd.DataFrame, ndim=2, index=False, header=False).value,
+            ]
 
-            else:
-                wb.app.status_bar = f"{linkage} linkages on {sheet} in Scenario Tool not recognized"
+            df = pd.concat(
+                rngs,
+                axis=1,
+            )
+            df.iloc[:, 1] = df.iloc[:, 1].replace(
+                True, wb.sheets[sheet].range(named_range).offset(row_offset=-3).resize(1, 1).value
+            )
 
-            # Add linkage name
-            if not df.empty:
-                df["linkage"] = linkage
+            # Rename columns
+            df.columns = [0] + ([linkage] * wb.sheets[sheet].range(named_range).shape[1])
 
-                # Get all scenario tags (or return a index-length list of None)
-                scenario: list = (
-                    wb.sheets[sheet].range(f"{scenario_column}").value
-                    if scenario_column is not None
-                    else [None] * len(df)
-                )
-                df["scenario"] = scenario
+        else:
+            raise ValueError(f"{linkage} linkages on {sheet} in Scenario Tool not recognized")
 
-                # Drop stray rows and melt
-                df = df.melt(id_vars=[0, "linkage", "scenario"]).dropna(subset=0).drop(columns=["variable"])
+        # Add linkage name
+        df["linkage"] = linkage
 
-                if other_column_first is True or other_column_first is None:
-                    df = df.rename(columns={0: "component_from", "value": "component_to"})
-                elif other_column_first is False:
-                    df = df.rename(columns={0: "component_to", "value": "component_from"})
+        # Get all scenario tags (or return a index-length list of None)
+        scenario: list = (
+            wb.sheets[sheet].range(f"{scenario_column}").value if scenario_column is not None else [None] * len(df)
+        )
+        df["scenario"] = scenario
 
-                # Combine dataframes
-                linkages = pd.concat([linkages, df], ignore_index=True, axis=0)
+        # Drop stray rows and melt
+        df = df.melt(id_vars=[0, "linkage", "scenario"]).dropna(subset=0).drop(columns=["variable"])
+
+        if other_column_first is True or other_column_first is None:
+            df = df.rename(columns={0: "component_from", "value": "component_to"})
+        elif other_column_first is False:
+            df = df.rename(columns={0: "component_to", "value": "component_from"})
+
+        # Combine dataframes
+        linkages = pd.concat([linkages, df], ignore_index=True, axis=0)
 
     # Remove `False` or `None` values in `component_to`
     linkages = linkages[linkages["component_to"] != False].dropna(subset="component_to")
 
-    linkages = (
-        linkages.dropna(subset=["component_from"]).drop_duplicates().to_csv(data_folder / "linkages.csv", index=False)
-    )
+    linkages = linkages.dropna(subset=["component_from"]).drop_duplicates()
+
+    linkages.to_csv(data_folder / "linkages.csv", index=False)
 
     wb.app.status_bar = None
 
@@ -443,29 +439,6 @@ def regroup_columns_by_modeled_years(*, wb: Optional["Book"] = None):
                                 )
 
 
-def run_mock_pathways(wb: Optional[xw.Book] = None):
-    """Run the Pathways UI to print out inputs (for testing)."""
-
-    if wb is None:
-        curr_dir = upath.UPath(__file__).parent
-        xw.Book(curr_dir / ".." / ".." / ".." / "pathways" / "Pathways Scenario Tool.xlsb").set_mock_caller()
-        wb = xw.Book.caller()
-
-    # Automatically populate Pathways UI interpreter path
-    from sys import platform
-
-    if platform in ["win32", "cygwin"]:
-        wb.sheets["xlwings.conf"].range("B1").value = sys.executable
-    elif platform == "darwin":
-        wb.sheets["xlwings.conf"].range("B2").value = sys.executable
-    else:
-        logger.exception("It seems like you're running on Linux. Running the Excel UIs on Linux is not supported.")
-
-    # Save files
-    save_attributes_files(wb=wb)
-    save_system(sheet_name="System")
-
-
 def run_mock_resolve():
     curr_dir = upath.UPath(__file__).parent
     xw.Book(curr_dir / ".." / ".." / "RECAP-RESOLVE Scenario Tool_20230202.xlsm").set_mock_caller()
@@ -487,13 +460,10 @@ def run_mock_resolve():
 
 if __name__ == "__main__":
     curr_dir = upath.UPath(__file__).parent
-    xw.Book(
-        # "/Users/skramer/Library/CloudStorage/OneDrive-SharedLibraries-EnergyandEnvironmentalEconomics,Inc/CPUC IRP (1460) - Documents/RSP and PSP Analyses/RESOLVE 2023 PSP and 2024-25 TPP/Model UIs/Resolve Scenario Tool - CPUC IRP 2023 PSP - PUBLIC - v1.0.2-hydrogen.xlsm"
-        "/Users/skramer/code/new-modeling-toolkit/Resolve Scenario Tool - CPUC IRP 2023 PSP - PUBLIC - v1.0.2-hydrogen.xlsm"
-    ).set_mock_caller()
+    xw.Book(str((upath.UPath("../..") / "Resolve Scenario Tool - OSW LLT - v6 1.xlsm").absolute())).set_mock_caller()
     wb = xw.Book.caller()
 
     # regroup_columns_by_modeled_years(wb=wb)
-    # save_attributes_files(model="resolve", wb=wb, data_folder="/Users/skramer/code/new-modeling-toolkit/data-hydrogen/")
-    save_linkages_csv(model="resolve", wb=wb, data_folder="/Users/skramer/code/new-modeling-toolkit/data-hydrogen/")
-    save_system(sheet_name="System", wb=wb, data_folder="/Users/skramer/code/new-modeling-toolkit/data-hydrogen/")
+    save_attributes_files(model="resolve", wb=wb, data_folder=upath.UPath("../../data-cpuc-test").absolute())
+    # save_linkages_csv(model="resolve", wb=wb, data_folder=upath.UPath("../../data-cpuc-test").absolute())
+    save_system(sheet_name="System", wb=wb, data_folder=upath.UPath("../../data-cpuc-test").absolute())

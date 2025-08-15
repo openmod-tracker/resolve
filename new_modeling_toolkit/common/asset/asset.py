@@ -1,15 +1,13 @@
 from typing import Optional
 
 from loguru import logger
-from pydantic import confloat
 from pydantic import Field
 from pydantic import PositiveInt
-from pydantic import validator
+from typing_extensions import Annotated
 
 from new_modeling_toolkit import get_units
 from new_modeling_toolkit.core import component
 from new_modeling_toolkit.core import linkage
-from new_modeling_toolkit.core.custom_model import convert_str_float_to_int
 from new_modeling_toolkit.core.temporal import timeseries as ts
 
 
@@ -18,9 +16,6 @@ class Asset(component.Component):
     Define an Asset component, defined as a component of the energy supply system that can be built by the model and
     has costs that must be accounted for.
     """
-
-    class Config:
-        validate_assignment = True
 
     ######################
     # Mapping Attributes #
@@ -88,35 +83,35 @@ class Asset(component.Component):
     # Operational Attributes #
     ###################################
     # TODO 2021-09-21: Something about ramp rate constraint as-implemented doesn't allow condecimal
-    ramp_rate: Optional[confloat(gt=0)] = Field(
+    ramp_rate: Optional[Annotated[float, Field(gt=0)]] = Field(
         None,
         description="Single-hour ramp rate (% of rating/hour). When used in conjunction with the other ramp rate limits (2-4 hour), a resource's dispatch will be constrained by all applicable ramp rate limits on a rolling basis.",
         units=get_units("ramp_rate"),
     )
-    ramp_rate_2_hour: Optional[confloat(gt=0)] = Field(
+    ramp_rate_2_hour: Optional[Annotated[float, Field(gt=0)]] = Field(
         None, description="Two-hour ramp rate (% of rating/hour).", units=get_units("ramp_rate_2_hour")
     )
-    ramp_rate_3_hour: Optional[confloat(gt=0)] = Field(
+    ramp_rate_3_hour: Optional[Annotated[float, Field(gt=0)]] = Field(
         None, description="Three-hour ramp rate (% of rating/hour).", units=get_units("ramp_rate_3_hour")
     )
-    ramp_rate_4_hour: Optional[confloat(gt=0)] = Field(
+    ramp_rate_4_hour: Optional[Annotated[float, Field(gt=0)]] = Field(
         None, description="Four-hour ramp rate (% of rating/hour).", units=get_units("ramp_rate_4_hour")
     )
 
-    td_losses_adjustment: Optional[confloat(ge=1)] = Field(
+    td_losses_adjustment: Optional[Annotated[float, Field(ge=1)]] = Field(
         None,
         description="T&D loss adjustment to gross up to system-level loads. For example, a DER may be able to serve "
         "8% more load (i.e., 1.08) than an equivalent bulk system resource due to T&D losses.",
         units=get_units("td_losses_adjustment"),
     )
 
-    stochastic_outage_rate: Optional[confloat(ge=0)] = Field(
+    stochastic_outage_rate: Optional[Annotated[float, Field(ge=0)]] = Field(
         None,
         description="Stochastic forced outage rate",
         units=get_units("stochastic_outage_rate"),
     )
 
-    mean_time_to_repair: Optional[confloat(ge=0)] = Field(
+    mean_time_to_repair: Optional[Annotated[float, Field(ge=0)]] = Field(
         None, description="Mean time to repair", units=get_units("mean_time_to_repair")
     )
 
@@ -161,14 +156,6 @@ class Asset(component.Component):
         down_method="annual",
         units=get_units("new_capacity_fixed_om_by_vintage"),
     )
-
-    # Convert strings that look like floats to integers for integer fields
-    _convert_int = validator(
-        "physical_lifetime",
-        "financial_lifetime",
-        allow_reuse=True,
-        pre=True,
-    )(convert_str_float_to_int)
 
     ########################
     # Optimization Results #

@@ -1,0 +1,6 @@
+﻿column,attribute,helper_function,default_value
+profile_name,name,,
+zone,,get_zone,
+energy_mwh,annual_energy_forecast,,
+peak_mw,annual_peak_forecast,,
+load_scale_type,,get_load_scale_type,

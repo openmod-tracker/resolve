@@ -2,7 +2,7 @@ from typing import Optional
 
 import pandas as pd
 from pydantic import Field
-from pydantic import validator
+from pydantic import field_validator
 
 from new_modeling_toolkit import get_units
 from new_modeling_toolkit.common.asset import Asset
@@ -44,7 +44,8 @@ class Plant(Asset):
     )
     provide_power_potential_profile__type: TimeseriesType = TimeseriesType.WEATHER_YEAR
 
-    @validator("provide_power_potential_profile")
+    @field_validator("provide_power_potential_profile")
+    @classmethod
     def floor_small_values(cls, provide_power_potential_profile):
         """Remove any ``provide_power_potential_profile`` values below 1e-4."""
         if provide_power_potential_profile is not None:
@@ -54,7 +55,7 @@ class Plant(Asset):
         return provide_power_potential_profile
 
     provide_power_min_profile: ts.FractionalTimeseries = Field(
-        None,
+        default_factory=ts.FractionalTimeseries.zero,
         description="Fixed shape of resource's minimum power output (e.g., hydro minimum generation)",
         default_freq="H",
         up_method="ffill",
@@ -64,7 +65,7 @@ class Plant(Asset):
     provide_power_min_profile__type: TimeseriesType = TimeseriesType.WEATHER_YEAR
 
     increase_load_potential_profile: ts.FractionalTimeseries = Field(
-        None,
+        default_factory=ts.FractionalTimeseries.zero,
         description="Fixed shape of resource's potential power draw (e.g. flat shape for storage resources)."
         " Used in conjunction with "
         ":py:attr:`new_modeling_toolkit.common.resource.Resource.curtailable`.",

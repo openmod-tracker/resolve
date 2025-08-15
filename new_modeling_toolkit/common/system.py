@@ -7,7 +7,6 @@ from typing import Optional
 import pandas as pd
 from loguru import logger
 from pydantic import Field
-from pydantic import validator
 from tqdm import tqdm
 
 from new_modeling_toolkit.common import asset
@@ -18,16 +17,21 @@ from new_modeling_toolkit.common.asset import tx_path
 from new_modeling_toolkit.common.asset.plant import resource
 from new_modeling_toolkit.core import component
 from new_modeling_toolkit.core import linkage
-from new_modeling_toolkit.core.custom_model import convert_str_float_to_int
+from new_modeling_toolkit.core import three_way_linkage
 from new_modeling_toolkit.core.temporal import timeseries as ts
 from new_modeling_toolkit.core.utils.core_utils import timer
 from new_modeling_toolkit.core.utils.util import DirStructure
-from new_modeling_toolkit.system import fuel
 from new_modeling_toolkit.system import policy
+from new_modeling_toolkit.system import pollutant
+from new_modeling_toolkit.system import sector
 from new_modeling_toolkit.system.agriculture import feedstock
+from new_modeling_toolkit.system.buildings import building_shell_subsector
+from new_modeling_toolkit.system.buildings import building_shell_type
 from new_modeling_toolkit.system.electric import elcc
+from new_modeling_toolkit.system.fuel import candidate_fuel
 from new_modeling_toolkit.system.fuel import conversion_plant as fuel_conversion_plant
 from new_modeling_toolkit.system.fuel import electrolyzer
+from new_modeling_toolkit.system.fuel import final_fuel
 from new_modeling_toolkit.system.fuel import storage as fuel_storage
 from new_modeling_toolkit.system.fuel import transport as fuel_transportation
 from new_modeling_toolkit.system.fuel import zone as fuel_zone
@@ -41,6 +45,7 @@ NON_COMPONENT_FIELDS = [
     "linkages",
     "name",
     "scenarios",
+    "three_way_linkages",
     "year_end",
     "year_start",
 ]
@@ -49,6 +54,12 @@ NON_COMPONENT_FIELDS = [
 LINKAGE_TYPES = [
     cls_obj
     for cls_name, cls_obj in inspect.getmembers(sys.modules["new_modeling_toolkit.core.linkage"])
+    if inspect.isclass(cls_obj)
+]
+
+THREE_WAY_LINKAGE_TYPES = [
+    cls_obj
+    for cls_name, cls_obj in inspect.getmembers(sys.modules["new_modeling_toolkit.core.three_way_linkage"])
     if inspect.isclass(cls_obj)
 ]
 
@@ -61,12 +72,11 @@ class SystemCost(component.Component):
     """
 
     annual_cost: ts.NumericTimeseries = Field(
-        default_factory=ts.Timeseries.zero,
+        default_factory=ts.NumericTimeseries.zero,
         default_freq="YS",
         up_method="ffill",
         down_method="annual",
     )
-
 
 class System(component.Component):
     """Initializes Component and Linkage instances."""
@@ -110,12 +120,16 @@ class System(component.Component):
 
     # Other component classes
     biomass_resources: dict[str, feedstock.BiomassResource] = Field({}, data_filepath="biomass_resources")
-    candidate_fuels: dict[str, fuel.CandidateFuel] = Field({}, data_filepath="candidate_fuels")
+    building_shell_subsectors: dict[str, building_shell_subsector.BuildingShellSubsector] = Field({}, data_filepath="building_shell_subsectors")
+    building_shell_types: dict[str, building_shell_type.BuildingShellType] = Field({}, data_filepath="building_shell_types")
+    candidate_fuels: dict[str, candidate_fuel.CandidateFuel] = Field({}, data_filepath="candidate_fuels")
     elcc_surfaces: dict[str, elcc.ELCCSurface] = Field({}, data_filepath="elcc_surfaces")
     fuel_zones: dict[str, fuel_zone.FuelZone] = Field({}, data_filepath="fuel_zones")
-    final_fuels: dict[str, fuel.FinalFuel] = Field({}, data_filepath="final_fuels")
+    final_fuels: dict[str, final_fuel.FinalFuel] = Field({}, data_filepath="final_fuels")
     loads: dict[str, load_component.Load] = Field({}, data_filepath="loads")
+    pollutants: dict[str, pollutant.Pollutant] = Field({}, data_filepath="pollutants")
     reserves: dict[str, reserve.Reserve] = Field({}, data_filepath="reserves")
+    sectors: dict[str, sector.Sector] = Field({}, data_filepath="sectors")
     system_costs: dict[str, SystemCost] = Field({}, data_filepath="system_costs")
     zones: dict[str, zone.Zone] = Field({}, data_filepath="zones")
     # fmt: on
@@ -124,6 +138,7 @@ class System(component.Component):
     # Linkages #
     ############
     linkages: dict[str, list[linkage.Linkage]] = {}
+    three_way_linkages: dict[str, list[three_way_linkage.ThreeWayLinkage]] = {}
 
     ##########
     # FIELDS #
@@ -133,9 +148,6 @@ class System(component.Component):
     year_end: Optional[int] = None
 
     scenarios: list = []
-
-    # Convert strings that look like floats to integers for integer fields
-    _convert_int = validator("year_start", "year_end", allow_reuse=True, pre=True)(convert_str_float_to_int)
 
     @property
     def electric_plants(self):
@@ -167,13 +179,13 @@ class System(component.Component):
     @property
     def _component_fields(self):
         """Return list of component FIELDS in `System` (by manually excluding non-`Component` attributes)."""
-        return {name: field for name, field in self.__fields__.items() if name not in NON_COMPONENT_FIELDS}
+        return {name: field for name, field in self.model_fields.items() if name not in NON_COMPONENT_FIELDS}
 
     @property
     def components(self):
         """Return list of component ATTRIBUTES and "virtual" components (i.e., properties that are the union of other components)."""
         return (
-            {name: getattr(self, name) for name, field in self.__fields__.items() if name not in NON_COMPONENT_FIELDS}
+            {name: getattr(self, name) for name, field in self.model_fields.items() if name not in NON_COMPONENT_FIELDS}
             | {"assets": self.assets}
             | {"plants": self.plants}
             | {"policies": self.policies}
@@ -204,6 +216,11 @@ class System(component.Component):
         self.linkages = self._construct_linkages(
             linkage_subclasses_to_load=LINKAGE_TYPES, linkage_type="linkages", linkage_cls=linkage.Linkage
         )
+        self.three_way_linkages = self._construct_linkages(
+            linkage_subclasses_to_load=THREE_WAY_LINKAGE_TYPES,
+            linkage_type="three_way_linkages",
+            linkage_cls=three_way_linkage.ThreeWayLinkage,
+        )
 
         ##########################
         # ADDITIONAL VALIDATIONS #
@@ -216,6 +233,7 @@ class System(component.Component):
                 except Exception as e:
                     raise AssertionError(f"Error encountered when revalidating instance `{instance.name}`") from e
 
+
     @timer
     def _construct_components(self):
         components_to_load = pd.read_csv(self.dir_str.data_interim_dir / "systems" / self.name / "components.csv")
@@ -225,8 +243,8 @@ class System(component.Component):
         # Populate component attributes with data from instance CSV files
         # Get field class by introspecting the field info
         for field_name, field_info in self._component_fields.items():
-            field_type = field_info.type_
-            field_data_filepath = self.__fields__[field_name].field_info.extra["data_filepath"]
+            field_type = self.get_field_type(field_info=field_info)[-1]
+            field_data_filepath = self.model_fields[field_name].json_schema_extra["data_filepath"]
 
             self.update_component_attrs(
                 field_name=field_name,
@@ -326,7 +344,7 @@ class System(component.Component):
         extrapolated = {}
         logger.info("Resampling timeseries attributes...")
         for field_name, components in {
-            name: getattr(self, name) for name, field in self.__fields__.items() if name not in NON_COMPONENT_FIELDS
+            name: getattr(self, name) for name, field in self.model_fields.items() if name not in NON_COMPONENT_FIELDS
         }.items():
             logger.debug(f"{field_name.title()}")
             for instance in tqdm(
@@ -381,6 +399,16 @@ class System(component.Component):
                     resample_non_weather_year_attributes=resample_non_weather_year_attributes,
                 )
 
+        # Regularize timeseries attributes, if any, in three way linkages (same as components above)
+        for three_way_linkage_class in self.three_way_linkages:
+            for three_way_linkage_inst in self.three_way_linkages[three_way_linkage_class]:
+                extrapolated[three_way_linkage_inst.name] = three_way_linkage_inst.resample_ts_attributes(
+                    modeled_years,
+                    weather_years,
+                    resample_weather_year_attributes=resample_weather_year_attributes,
+                    resample_non_weather_year_attributes=resample_non_weather_year_attributes,
+                )
+
         if extrapolated := {str(k): list(v) for k, v in extrapolated.items() if v is not None}:
             logger.debug(
                 f"The following timeseries attributes were extrapolated to cover model years: \n{dumps(extrapolated, indent=4)}"
@@ -395,10 +423,11 @@ class System(component.Component):
             "w",
         ) as f:
             f.write(
-                self.json(
+                self.model_dump_json(
                     exclude={"dir_str", "dir_structure"},
                     exclude_defaults=True,
                     exclude_none=True,
+                    exclude_unset=True,
                     indent=1,
                 )
             )

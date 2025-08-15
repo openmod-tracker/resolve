@@ -1,0 +1,16 @@
+**/*
+
+!/new_modeling_toolkit/**/*
+
+!LICENSE
+!README.md
+
+!docker.environment.yml
+!pyproject.toml
+
+!environment-dev.yml
+!.devcontainer/*
+!.devcontainer/**/*
+
+**/__pycache__
+**/.DS_Store

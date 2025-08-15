@@ -2,6 +2,7 @@ from typing import Dict
 from typing import Optional
 
 import pandas as pd
+import pyomo.environ as pyo
 from pydantic import Field
 
 from new_modeling_toolkit.core import component
@@ -14,8 +15,6 @@ from new_modeling_toolkit.system.fuel.transport import FuelTransportation
 
 
 class FuelZone(component.Component):
-    class Config:
-        validate_assignment = True
 
     ######################
     # Mapping Attributes #
@@ -91,7 +90,7 @@ class FuelZone(component.Component):
                 ]
                 for fuel_production_plant in self.fuel_production_plants.keys()
                 if candidate_fuel
-                in self.fuel_production_plants[fuel_production_plant]._instance_from.candidate_fuels.keys()
+                in self.fuel_production_plants[fuel_production_plant].instance_from.candidate_fuels.keys()
             )
 
     def Fuel_Zone_Resource_Candidate_Fuel_Consumption_In_Timepoint_MMBTU_H(
@@ -119,7 +118,7 @@ class FuelZone(component.Component):
         if self.fuel_storage_instances is not None:
             for fuel_storage in self.fuel_storage_instances.keys():
                 # TODO: (BKW) We will need to make some distinction between candidate fuels stored and candidate fuels used for operations
-                if candidate_fuel in self.fuel_storages[fuel_storage]._instance_from.candidate_fuels.keys():
+                if candidate_fuel in self.fuel_storages[fuel_storage].instance_from.candidate_fuels.keys():
                     storage += model.Fuel_Storage_Charging_MMBtu_per_Hr[fuel_storage, model_year, rep_period, hour]
 
                     storage -= model.Fuel_Storage_Discharging_MMBtu_per_Hr[fuel_storage, model_year, rep_period, hour]
@@ -193,25 +192,35 @@ class FuelZone(component.Component):
     def Satisfy_Fuel_Zone_Final_Fuel_Hourly_Demands_Constraint(
         self, temporal_settings, model, final_fuel_demand, model_year, rep_period, hour
     ):
-        return sum(
-            model.Fuel_Zone_Candidate_Fuel_Consumption_By_Final_Fuel_Demands_MMBTU_H[
-                self.name, candidate_fuel, final_fuel_demand, model_year, rep_period, hour
-            ]
-            for candidate_fuel in model.FINAL_FUEL_DEMAND_CANDIDATE_FUELS[final_fuel_demand]
-        ) == self.final_fuels[final_fuel_demand]._instance_from.demand.slice_by_timepoint(
-            temporal_settings=temporal_settings, model_year=model_year, period=rep_period, hour=hour
-        )
+        if self.final_fuels[final_fuel_demand].instance_from.annual_demand is None:
+            constraint = pyo.Constraint.Skip
+        else:
+            constraint = sum(
+                model.Fuel_Zone_Candidate_Fuel_Consumption_By_Final_Fuel_Demands_MMBTU_H[
+                    self.name, candidate_fuel, final_fuel_demand, model_year, rep_period, hour
+                ]
+                for candidate_fuel in model.FINAL_FUEL_DEMAND_CANDIDATE_FUELS[final_fuel_demand]
+            ) == self.final_fuels[final_fuel_demand].instance_from.annual_demand.slice_by_timepoint(
+                temporal_settings=temporal_settings, model_year=model_year, period=rep_period, hour=hour
+            )
+
+        return constraint
 
     def Satisfy_Fuel_Zone_Final_Fuel_Annual_Demands_Constraint(self, model, final_fuel_demand, model_year):
         """
         Ensures that annual zonal final fuel demands are met by candidate consumption for final fuel demands.
         """
-        return sum(
-            model.Annual_Fuel_Zone_Candidate_Fuel_Consumption_By_Final_Fuel_Demands_MMBTU[
-                self.name, candidate_fuel, final_fuel_demand, model_year
-            ]
-            for candidate_fuel in model.FINAL_FUEL_DEMAND_CANDIDATE_FUELS[final_fuel_demand]
-        ) == self.final_fuels[final_fuel_demand]._instance_from.demand.slice_by_year(model_year)
+        if self.final_fuels[final_fuel_demand].instance_from.annual_demand is None:
+            constraint = pyo.Constraint.Skip
+        else:
+            constraint = sum(
+                model.Annual_Fuel_Zone_Candidate_Fuel_Consumption_By_Final_Fuel_Demands_MMBTU[
+                    self.name, candidate_fuel, final_fuel_demand, model_year
+                ]
+                for candidate_fuel in model.FINAL_FUEL_DEMAND_CANDIDATE_FUELS[final_fuel_demand]
+            ) == self.final_fuels[final_fuel_demand].instance_from.annual_demand.slice_by_year(model_year)
+
+        return constraint
 
     ########################
     # Optimization Results #
@@ -223,7 +232,7 @@ class FuelZone(component.Component):
     @property
     def electrolyzer_instances(self) -> Dict[str, Electrolyzer]:
         electrolyzers = (
-            {name: linkage._instance_from for name, linkage in self.electrolyzers.items()}
+            {name: linkage.instance_from for name, linkage in self.electrolyzers.items()}
             if self.electrolyzers is not None
             else None
         )
@@ -232,7 +241,7 @@ class FuelZone(component.Component):
     @property
     def fuel_storage_instances(self) -> Dict[str, FuelStorage]:
         fuel_storages = (
-            {name: linkage._instance_from for name, linkage in self.fuel_storages.items()}
+            {name: linkage.instance_from for name, linkage in self.fuel_storages.items()}
             if self.fuel_storages is not None
             else None
         )
@@ -243,7 +252,7 @@ class FuelZone(component.Component):
         self,
     ) -> Dict[str, FuelTransportation]:
         paths_to = (
-            {name: linkage._instance_to for name, linkage in self.fuel_transportations.items() if linkage.to_zone}
+            {name: linkage.instance_to for name, linkage in self.fuel_transportations.items() if linkage.to_zone}
             if self.fuel_transportations is not None
             else None
         )
@@ -254,7 +263,7 @@ class FuelZone(component.Component):
         self,
     ) -> Dict[str, FuelTransportation]:
         paths_from = (
-            {name: linkage._instance_to for name, linkage in self.fuel_transportations.items() if linkage.from_zone}
+            {name: linkage.instance_to for name, linkage in self.fuel_transportations.items() if linkage.from_zone}
             if self.fuel_transportations is not None
             else None
         )

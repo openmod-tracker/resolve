@@ -4,18 +4,15 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 from loguru import logger
-from pydantic import confloat
-from pydantic import conint
 from pydantic import Field
 from pydantic import PositiveFloat
 from pydantic import root_validator
-from pydantic import validator
+from typing_extensions import Annotated
 
 from .plant import Plant
 from new_modeling_toolkit import get_units
 from new_modeling_toolkit.core import dir_str
 from new_modeling_toolkit.core import linkage
-from new_modeling_toolkit.core.custom_model import convert_str_float_to_int
 from new_modeling_toolkit.core.temporal import timeseries as ts
 
 
@@ -130,7 +127,7 @@ class Resource(Plant):
         "Exclusive of :py:attr:`new_modeling_toolkit.common.resource.Resource.unit_commitment_linear`.",
     )
     provide_power_potential_profile: ts.FractionalTimeseries = Field(
-        default_factory=ts.Timeseries.one,
+        default_factory=ts.FractionalTimeseries.one,
         description="Fixed shape of resource's potential power output (e.g., solar or wind shape or flat shape"
         "for firm resources or storage resources). Used in conjunction with "
         ":py:attr:`new_modeling_toolkit.common.resource.Resource.curtailable`.",
@@ -140,28 +137,15 @@ class Resource(Plant):
         units=get_units("provide_power_potential_profile"),
     )
     provide_power_min_profile: ts.FractionalTimeseries = Field(
-        default_factory=ts.Timeseries.zero,
+        default_factory=ts.FractionalTimeseries.zero,
         description="Fixed shape of resource's minimum power output (e.g., hydro minimum generation)",
         default_freq="H",
         up_method="ffill",
         down_method="mean",
         units=get_units("provide_power_min_profile"),
     )
-    # Convert strings that look like floats to integers for integer fields
-    _convert_int = validator(
-        "build_year",
-        "min_up_time",
-        "min_down_time",
-        "adjacency",
-        "max_annual_calls",
-        "max_call_duration",
-        "max_shift_hr",
-        "grid_charging_allowed",
-        allow_reuse=True,
-        pre=True,
-    )(convert_str_float_to_int)
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def check_unit_commitment(cls, values):
         """Check that resources are either linear or integer unit commitment, or not at all (economic dispatch)."""
         # Temporarily include this error until integer UC is complete.
@@ -180,7 +164,7 @@ class Resource(Plant):
     @property
     def outage_distribution_obj(self):
         outage_dist_name = list(self.outage_distributions.keys())[0]
-        return self.outage_distributions[outage_dist_name]._instance_to
+        return self.outage_distributions[outage_dist_name].instance_to
 
     #################################
     # Build & Retirement Attributes #
@@ -215,7 +199,7 @@ class Resource(Plant):
         None, description="Combined interconnection limit for hybrid variable + storage resource."
     )
 
-    grid_charging_allowed: Optional[conint(ge=0, le=1)] = Field(
+    grid_charging_allowed: Optional[Annotated[int, Field(ge=0, le=1)]] = Field(
         None, description="Whether to allow hybrid storage resource to charge from grid as well as paired resource?"
     )
 
@@ -252,13 +236,13 @@ class Resource(Plant):
 
     # Demand Response attribute
     ## Currently used only by RECAP 2.0
-    max_annual_calls: Optional[conint(ge=0)] = Field(
+    max_annual_calls: Optional[Annotated[int, Field(ge=0)]] = Field(
         None, description="Annual number of allowable calls for a shed DR resource."
     )
 
     # Shift DR / Flex Load attribute
     ## Currently used only by RECAP 2.0
-    max_shift_hr: Optional[conint(ge=0)] = Field(
+    max_shift_hr: Optional[Annotated[int, Field(ge=0)]] = Field(
         None,
         description="Demand can be shifted to an hour within +/- max_shift_hours (total window  = 2*max_shift_hours)",
     )
@@ -270,11 +254,13 @@ class Resource(Plant):
         "(1.5 is typical scaling_factor)",
     )
 
-    @root_validator()
+    @root_validator(skip_on_failure=True)
     def validate_storage_duration(cls, values):
         if values["duration"] is not None and values["planned_storage_capacity"] is not None:
             if not np.isclose(
-                values["planned_installed_capacity"].data * values["duration"], values["planned_storage_capacity"].data
+                values["planned_installed_capacity"].data * values["duration"],
+                values["planned_storage_capacity"].data,
+                rtol=0.001,
             ).all():
                 raise ValueError(
                     f"For Resource `{values['name']}`, the specified `planned_storage_capacity` does not "
@@ -293,10 +279,10 @@ class Resource(Plant):
         "used in reference to other unit commitment parameters (labeled [UC])",
         units=get_units("unit_size_mw"),
     )
-    min_down_time: Optional[conint(ge=0)] = Field(
+    min_down_time: Optional[Annotated[int, Field(ge=0)]] = Field(
         None, description="[UC] Minimum downtime between commitments (hours).", units=get_units("min_down_time")
     )
-    min_up_time: Optional[conint(ge=0)] = Field(
+    min_up_time: Optional[Annotated[int, Field(ge=0)]] = Field(
         None, description="[UC] Minimum uptime during a commitment (hours).", units=get_units("min_up_time")
     )
     min_stable_level: Optional[ts.NumericTimeseries] = Field(
@@ -308,13 +294,13 @@ class Resource(Plant):
         down_method=None,
         weather_year=False,
     )
-    start_cost: Optional[confloat(ge=0)] = Field(
+    start_cost: Optional[Annotated[float, Field(ge=0)]] = Field(
         None,
         description="[UC] Cost for each unit startup ($/unit start). "
         "If using linearized UC, this cost will be linearized as well.",
         units=get_units("start_cost"),
     )
-    shutdown_cost: Optional[confloat(ge=0)] = Field(
+    shutdown_cost: Optional[Annotated[float, Field(ge=0)]] = Field(
         None,
         description="[UC] Cost for each unit shutdown ($/unit shutdown). "
         "If using linearized UC, this cost will be linearized as well.",
@@ -322,37 +308,37 @@ class Resource(Plant):
     )
     # Increase load & energy storage attributes
     # TODO (RG): If resource is a storage resource, validate that charging efficiency, discharging efficiency, and parasitic loss are initialized to some value
-    charging_efficiency: Optional[confloat(ge=0, le=1)] = Field(
+    charging_efficiency: Optional[Annotated[float, Field(ge=0, le=1)]] = Field(
         None,
         description="[Storage] Efficiency losses associated with charging (increasing load) "
         'to increase storage "state of charge".',
         units=get_units("charging_efficiency"),
     )
-    discharging_efficiency: Optional[confloat(ge=0, le=1)] = Field(
+    discharging_efficiency: Optional[Annotated[float, Field(ge=0, le=1)]] = Field(
         None,
         description="[Storage] Efficiency losses associated with discharging (providing power), "
         'taking energy out of storage "state of charge".',
         units=get_units("discharging_efficiency"),
     )
-    state_of_charge_min: Optional[confloat(ge=0, le=1)] = Field(
+    state_of_charge_min: Optional[Annotated[float, Field(ge=0, le=1)]] = Field(
         None,
         description="[Storage] Minimum state-of-charge at any given time.",
         units=get_units("discharging_efficiency"),
     )
-    parasitic_loss: Optional[confloat(ge=0, le=1)] = Field(
+    parasitic_loss: Optional[Annotated[float, Field(ge=0, le=1)]] = Field(
         None, description="[Storage] Hourly state of charge losses.", units=get_units("parasitic_loss")
     )
-    start_fuel_use: Optional[confloat(ge=0)] = Field(
+    start_fuel_use: Optional[Annotated[float, Field(ge=0)]] = Field(
         None, description="[UC] Amount of fuel used per unit start", units=get_units("start_fuel_use")
     )
-    fuel_burn_slope: Optional[confloat(ge=0)] = Field(
+    fuel_burn_slope: Optional[Annotated[float, Field(ge=0)]] = Field(
         None, description="Fuel burn slope (MMBTU/MWh)", units=get_units("fuel_burn_slope")
     )
-    fuel_burn_intercept: Optional[confloat(ge=0)] = Field(
+    fuel_burn_intercept: Optional[Annotated[float, Field(ge=0)]] = Field(
         None, description="Fuel burn intercept (MMBTU/hour)", units=get_units("fuel_burn_intercept")
     )
 
-    daily_budget: ts.FractionalTimeseries = Field(
+    daily_budget: Optional[ts.FractionalTimeseries] = Field(
         None,
         description="Daily energy generation budget as a fraction of operational capacity (effectively a daily "
         "capacity factor).",
@@ -361,7 +347,7 @@ class Resource(Plant):
         down_method=None,
         weather_year=True,
     )
-    monthly_budget: ts.FractionalTimeseries = Field(
+    monthly_budget: Optional[ts.FractionalTimeseries] = Field(
         None,
         description="Monthly energy generation budget as a fraction of operational capacity (effectively a monthly "
         "capacity factor).",
@@ -370,7 +356,7 @@ class Resource(Plant):
         down_method=None,
         weather_year=True,
     )
-    annual_budget: ts.FractionalTimeseries = Field(
+    annual_budget: Optional[ts.FractionalTimeseries] = Field(
         None,
         description="Annual energy generation budget as a fraction of operational capacity (effectively an annual "
         "capacity factor).",
@@ -388,7 +374,7 @@ class Resource(Plant):
     # Flexible Load Attribute #
     ###########################
 
-    adjacency: Optional[conint(gt=0)] = Field(
+    adjacency: Optional[Annotated[int, Field(gt=0)]] = Field(
         None,
         description="For flexible load resource, # of adjacent hours to constrain energy shifting.",
         units=get_units("adjacency"),
@@ -587,7 +573,7 @@ class Resource(Plant):
     def revalidate_has_policies(self):
         """Log warning message if resource has an ELCC surface but no reliability policy."""
         not_linked_to_prm_policies = (
-            not self.policies or len([p for p in self.policies.values() if p._instance_to.type == "prm"]) == 0
+            not self.policies or len([p for p in self.policies.values() if p.instance_to.type == "prm"]) == 0
         )
         if self.elcc_surfaces and not_linked_to_prm_policies:
             logger.warning(
@@ -600,7 +586,7 @@ class Resource(Plant):
         Returns capacity-scaled generation profile of resource in given model year
         """
         # Up-sample provide_power_potential_profile with interpolation
-        field_settings = self.__fields__["provide_power_potential_profile"].field_info.extra
+        field_settings = self.model_fields["provide_power_potential_profile"].json_schema_extra
         up_method, freq = field_settings["up_method"], field_settings["default_freq"]
         interpolated_profile = self.provide_power_potential_profile.resample_up(
             self.provide_power_potential_profile.data,
@@ -620,7 +606,7 @@ class Resource(Plant):
 
         # Re-scale planned storage capacity if charging efficiency and duration defined
         resource_to_resource_group_inst = list(self.resource_groups.keys())[0]  # Get resource group of resource
-        resource_group = self.resource_groups[resource_to_resource_group_inst]._instance_to
+        resource_group = self.resource_groups[resource_to_resource_group_inst].instance_to
         if resource_group.category in [ResourceCategory.STORAGE, ResourceCategory.HYBRID_STORAGE]:
             if self.duration:
                 if self.planned_storage_capacity is None or self.charging_efficiency is None:

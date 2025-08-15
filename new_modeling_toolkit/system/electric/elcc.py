@@ -25,7 +25,7 @@ class ELCCSurface(component.Component):
         for asset_linkage in self.assets.values():
             if asset_linkage.elcc_axis_index is None:
                 raise ValueError(
-                    f"`AssetToELCC Linkage between Asset `{asset_linkage._instance_from.name}` and ELCCSurface "
+                    f"`AssetToELCC Linkage between Asset `{asset_linkage.instance_from.name}` and ELCCSurface "
                     f"`{self.name}` has no `elcc_axis_index` defined."
                 )
 

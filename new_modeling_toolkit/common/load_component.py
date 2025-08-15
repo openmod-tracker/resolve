@@ -24,7 +24,7 @@ class Load(component.Component):
     scale_by_energy: bool = False
     policies: dict[str, linkage.Linkage] = {}
 
-    profile: Optional[ts.NumericTimeseries] = Field(default_freq="H", up_method="interpolate", down_method="mean")
+    profile: Optional[ts.NumericTimeseries] = Field(None, default_freq="H", up_method="interpolate", down_method="mean")
     profile__type: ts.TimeseriesType = ts.TimeseriesType.WEATHER_YEAR
 
     profile_model_years: Optional[ts.NumericTimeseries] = Field(
@@ -57,7 +57,7 @@ class Load(component.Component):
     energy_demand_subsectors: dict[str, linkage.Linkage] = {}
     reserves: dict[str, linkage.Linkage] = {}
 
-    @root_validator()
+    @root_validator(skip_on_failure=True)
     def validate_profile_weather_or_model_year(cls, values):
         """Ensure that users only provide one profile (either ``profile`` or ``profile_weather_years``."""
         if values["profile__type"] == ts.TimeseriesType.MODELED_YEAR:
@@ -78,7 +78,7 @@ class Load(component.Component):
             raise ValueError(f"For {values['name']}: Neither `profile` nor `profile_model_years` provided.")
         return values
 
-    @root_validator()
+    @root_validator(skip_on_failure=True)
     def validate_td_annual(cls, values):
         if values["td_losses_adjustment"] is None:
             if values["annual_energy_forecast"] is None and values["annual_peak_forecast"] is None:

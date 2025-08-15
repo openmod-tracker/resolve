@@ -17,9 +17,6 @@ from new_modeling_toolkit.core.utils.core_utils import map_not_none
 class Zone(component.Component):
     """This class defines a zone object and its methods."""
 
-    class Config:
-        validate_assignment = True
-
     ######################
     # Mapping Attributes #
     ######################
@@ -53,9 +50,9 @@ class Zone(component.Component):
     ########################
     # Optimization Results #
     ########################
-    # opt_hourly_energy_price_dollars_per_mwh: Optional[pd.Series] = Field(
-    #     None, description="Optimized hourly energy prices from RESOLVE, in $/MWh."
-    # )
+    opt_hourly_energy_price_dollars_per_mwh: Optional[pd.Series] = Field(
+        None, description="Optimized hourly energy prices from RESOLVE, in $/MWh."
+    )
     opt_hourly_energy_price_unweighted_dollars_per_mwh: Optional[pd.Series] = Field(
         None, description="Optimized hourly energy prices from RESOLVE, in $/MWh."
     )
@@ -84,7 +81,7 @@ class Zone(component.Component):
     @property
     def resource_instances(self) -> Dict[str, Resource]:
         resources = (
-            {name: linkage._instance_from for name, linkage in self.resources.items()}
+            {name: linkage.instance_from for name, linkage in self.resources.items()}
             if self.resources is not None
             else None
         )
@@ -94,7 +91,7 @@ class Zone(component.Component):
     @property
     def load_instances(self) -> Dict[str, Load]:
         loads = (
-            {name: linkage._instance_from for name, linkage in self.loads.items()} if self.loads is not None else None
+            {name: linkage.instance_from for name, linkage in self.loads.items()} if self.loads is not None else None
         )
 
         return loads
@@ -102,7 +99,7 @@ class Zone(component.Component):
     @property
     def tx_path_instances_to_zone(self) -> Dict:
         paths_to = (
-            {name: linkage._instance_to for name, linkage in self.tx_paths.items() if linkage.to_zone}
+            {name: linkage.instance_to for name, linkage in self.tx_paths.items() if linkage.to_zone}
             if self.tx_paths is not None
             else None
         )
@@ -112,7 +109,7 @@ class Zone(component.Component):
     @property
     def tx_path_instances_from_zone(self) -> Dict:
         paths_from = (
-            {name: linkage._instance_to for name, linkage in self.tx_paths.items() if linkage.from_zone}
+            {name: linkage.instance_to for name, linkage in self.tx_paths.items() if linkage.from_zone}
             if self.tx_paths is not None
             else None
         )
@@ -268,7 +265,7 @@ class Zone(component.Component):
         """
         agg_load_profile = 0
         for inst in self.loads.keys():
-            agg_load_profile += self.loads[inst]._instance_from.scaled_profile_by_modeled_year[model_year].data
+            agg_load_profile += self.loads[inst].instance_from.scaled_profile_by_modeled_year[model_year].data
         return agg_load_profile
 
 

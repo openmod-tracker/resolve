@@ -5,17 +5,16 @@ import numpy as np
 import pandas as pd
 import scipy.spatial
 from loguru import logger
-from pydantic import conint
 from pydantic import Field
+from pydantic import field_validator
 from pydantic import root_validator
-from pydantic import validator
 from sklearn.cluster import AffinityPropagation
+from typing_extensions import Annotated
 
 from new_modeling_toolkit.common import load_component
 from new_modeling_toolkit.common.asset.plant import resource
 from new_modeling_toolkit.common.system import System
 from new_modeling_toolkit.core import component
-from new_modeling_toolkit.core.custom_model import convert_str_float_to_int
 from new_modeling_toolkit.core.temporal import timeseries as ts
 from new_modeling_toolkit.core.utils import util
 
@@ -185,15 +184,10 @@ class TemporalSettings(component.Component):
     annual_discount_rate: Optional[ts.NumericTimeseries] = Field(
         None, default_freq="YS", up_method="ffill", down_method="annual", description="Annual real discount rate."
     )
-    cost_dollar_year: Optional[conint(ge=1900)] = None
-    end_effect_years: Optional[conint(ge=0)] = None
+    cost_dollar_year: Optional[Annotated[int, Field(ge=1900)]] = None
+    end_effect_years: Optional[Annotated[int, Field(ge=0)]] = None
     modeled_year_discount_factor: Optional[ts.NumericTimeseries] = Field(None, default_freq="YS", down_method="annual")
     discount_rate: Optional[ts.NumericTimeseries] = Field(None, default_freq="YS", down_method="annual")
-
-    # Convert strings that look like floats to integers for integer fields
-    _convert_int = validator(
-        "cost_dollar_year", "end_effect_years", "representative_periods_amount", allow_reuse=True, pre=True
-    )(convert_str_float_to_int)
 
     def __hash__(self):
         """Define a hash ID for temporal settings so that we can find generation profiles that have already been re-scaled."""
@@ -207,17 +201,18 @@ class TemporalSettings(component.Component):
 
         return hash(
             (
-                (
-                    tuple(sorted(self.weather_years_to_use.data[self.weather_years_to_use.data == True].index.year))
-                    if self.weather_years_to_use is not None
-                    else 0
-                ),
+                tuple(sorted(self.modeled_years.data[self.modeled_years.data == True].index.year)),
+                tuple(sorted(self.weather_years_to_use.data[self.weather_years_to_use.data == True].index.year))
+                if self.weather_years_to_use is not None
+                else 0,
                 self.representative_periods_amount,
                 string_to_int(self.representative_periods_duration),
+                tuple(self.rep_periods.iloc[:, 0].values),
             )
         )
 
-    @validator("annual_discount_rate")
+    @field_validator("annual_discount_rate")
+    @classmethod
     def validate_annual_discount_rate(cls, annual_discount_rate):
         """Validate that discount rates are just the percentage portion and not (1 + discount rate) or 1 / (1 + discount rate)."""
         if (annual_discount_rate.data >= 1).any():
@@ -226,7 +221,7 @@ class TemporalSettings(component.Component):
             raise ValueError("It seems like you entered discount rates as 1 / (1 + discount rate)")
         return annual_discount_rate
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def validate_or_calculate_discount_factor(cls, values):
         """Validate that required attributes to calculate RESOLVE discount factors are available.
 
@@ -381,7 +376,7 @@ class TemporalSettings(component.Component):
     )
 
     # various files that are used to define the rep periods
-    rep_periods_def_files = [
+    rep_periods_def_files: list[str] = [
         "rep_periods",
         "chrono_periods",
         "components_to_consider",
@@ -421,7 +416,8 @@ class TemporalSettings(component.Component):
         description="A pd series listing the weight of each representative periods",
     )
 
-    @validator("representative_periods_method", pre=True)
+    @field_validator("representative_periods_method", mode="before")
+    @classmethod
     def validate_rep_period_method(cls, rep_period_method):
         # define parsing dictionary which gets turned into regex patterns
         parsing_dict = {"-": "_", " ": "_", "medoid": "medioid", "representative": "rep"}
@@ -441,7 +437,8 @@ class TemporalSettings(component.Component):
                 "was:{}".format(available_methods, rep_period_method)
             )
 
-    @validator("representative_periods_duration")
+    @field_validator("representative_periods_duration")
+    @classmethod
     def validate_rep_duration(cls, duration):
         # confirm that the provided period duration is a multitude of hour
         if (pd.Timedelta(duration) % pd.Timedelta("1H")).seconds >= 1e-4:
@@ -595,6 +592,7 @@ class TemporalSettings(component.Component):
         self.rep_periods = self.chrono_periods.loc[cluster_result.medioids]
         self.map_to_rep_periods = cluster_result.cluster_map
         self.rep_period_weights = cluster_result.weights
+        self.representative_periods_amount = len(self.rep_periods)
 
     def set_timesteps(self):
         """
@@ -668,7 +666,9 @@ class TemporalSettings(component.Component):
             if getattr(self, attr) is not None:
                 getattr(self, attr).to_csv(self.attr_path.parent / (attr + ".csv"))
 
-        self.annual_discount_rate.data.to_csv(self.attr_path.parent / "annual_discount_rate.csv")
+        if self.annual_discount_rate is not None:
+            self.annual_discount_rate.data.to_csv(self.attr_path.parent / "annual_discount_rate.csv")
+
         self.modeled_year_discount_factor.data.to_csv(self.attr_path.parent / "modeled_year_discount_factor.csv")
 
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import os
 import pathlib
@@ -17,6 +19,7 @@ from tqdm.notebook import tqdm
 
 from new_modeling_toolkit import ureg
 from new_modeling_toolkit.core import custom_model
+from new_modeling_toolkit.core.custom_model import Metadata
 from new_modeling_toolkit.core.temporal import timeseries as ts
 from new_modeling_toolkit.core.temporal.timeseries import TimeseriesType
 from new_modeling_toolkit.core.utils.core_utils import filter_not_none
@@ -38,19 +41,102 @@ class Component(custom_model.CustomModel):
 
         return str(self.name)
 
+    def _expose_linkage_component(self, linkage_name: str, linkage_key: str) -> "Component":
+        """
+        Return the linkage component
+
+        Args:
+            linkage_name: str of linkage name defined on System. Ex: "pollutants"
+            linkage_key: str. Name of specific linkage key in linkage dictionary. Ex: "Connecticut_Residential Single Family Space Heating"
+
+        Returns: linked component
+
+        """
+        linkage = getattr(self, linkage_name)[linkage_key].instance_to
+        # handle the case where the linkage_to returns the self object, and you actually want linkage_from
+        if linkage == self:
+            linkage = getattr(self, linkage_name)[linkage_key].instance_from
+        return linkage
+
+    def _return_linked_component(self, linkage_name: str) -> "Component":
+        """
+        For a 1:1 linkage, return the linked component.
+
+        Args:
+            linkage_name: str of linkage name. Ex: "sector"
+
+        Returns: linked component for 1:1 linkage
+
+        """
+        if getattr(self, linkage_name) is None or len(getattr(self, linkage_name)) == 0:
+            linkage = None
+        elif len(getattr(self, linkage_name)) > 1:
+            raise ValueError(f"Expecting only one linkage, multiple are present for {linkage_name}")
+        else:
+            linkage_key = list(getattr(self, linkage_name).keys())[0]
+            linkage = self._expose_linkage_component(linkage_name, linkage_key)
+
+        return linkage
+
+    def _return_linkage_list(self, linkage_name: str) -> list | None:
+        """
+        Loop through a dictionary of linkages and return a list of the linked component only.
+
+        Args:
+            linkage_name: str of name of the linkage on the component. Ex: "pollutants"
+
+        Returns: list of components
+
+        """
+        if getattr(self, linkage_name) is None or len(getattr(self, linkage_name)) == 0:
+            return None
+        else:
+            return [
+                self._expose_linkage_component(linkage_name, linkage_key) for linkage_key in getattr(self, linkage_name)
+            ]
+
+    def _return_linkage_dict(self, linkage_name: str) -> dict | None:
+        """
+        Loop through a dictionary of linkages and return a dict of the linked component only.
+
+        Args:
+            linkage_name: str of name of the linkage on the component. Ex: "pollutants"
+
+        Returns: dictionary of components. Key is the name of the linkage, value is the linked `to` or `from` component {str: component}
+
+        """
+        if getattr(self, linkage_name) is None or len(getattr(self, linkage_name)) == 0:
+            return None
+        else:
+            return {
+                linkage_key: self._expose_linkage_component(linkage_name, linkage_key)
+                for linkage_key in getattr(self, linkage_name)
+            }
+
+    @classmethod
+    def model_fields_with_aliases(cls):
+        return cls.model_fields | {
+            field_info.alias: field_info for field_info in cls.model_fields.values() if field_info.alias
+        }
+
+    @classmethod
+    def field_is_timeseries(cls, *, field_info) -> bool:
+        types = cls.get_field_type(field_info=field_info)
+        return any(ts_subclass in types for ts_subclass in ts.Timeseries.__subclasses__())
+
     @classmethod
     def get_timeseries_attribute_names(cls, include_aliases: bool = False):
         attribute_names = [
             attr
-            for attr, field_settings in cls.__fields__.items()
-            if field_settings.type_ in ts.Timeseries.__subclasses__()
+            for attr, field_settings in cls.model_fields.items()
+            if cls.field_is_timeseries(field_info=field_settings)
         ]
 
         if include_aliases:
             attribute_names += [
                 field_settings.alias
-                for attr, field_settings in cls.__fields__.items()
-                if field_settings.type_ in ts.Timeseries.__subclasses__() and field_settings.alias is not None
+                for attr, field_settings in cls.model_fields.items()
+                if cls.field_is_timeseries(field_info=field_settings) and field_settings.alias is not None
             ]
 
         return attribute_names
@@ -60,9 +146,9 @@ class Component(custom_model.CustomModel):
         ts_attrs = cls.get_timeseries_attribute_names()  # Do not include aliases
         ts_attr_default_freqs = {}
         for attr in ts_attrs:
-            field_settings = cls.__fields__[attr]
-            if "default_freq" in field_settings.field_info.extra:
-                default_freq = field_settings.field_info.extra["default_freq"]
+            field_settings = cls.model_fields[attr]
+            if field_settings.json_schema_extra and "default_freq" in field_settings.json_schema_extra:
+                default_freq = field_settings.json_schema_extra["default_freq"]
             else:
                 default_freq = None
             ts_attr_default_freqs[attr] = default_freq
@@ -76,14 +162,14 @@ class Component(custom_model.CustomModel):
         Checks that all timeseries data with down_method == 'annual' only has one input per year
         and sets the datetime index to be January 1st at midnight
         """
-        aliases = {field_settings.alias: attr for attr, field_settings in cls.__fields__.items()}
-        aliases.update({attr: attr for attr, field_settings in cls.__fields__.items()})
+        aliases = {field_settings.alias: attr for attr, field_settings in cls.model_fields.items()}
+        aliases.update({attr: attr for attr, field_settings in cls.model_fields.items()})
 
         for value in values:
             # In this situation, all the ts attributes are still the base ts (and not a subclass) when first initialized
             if (
                 isinstance(values[value], ts.Timeseries)
-                and cls.__fields__[aliases[value]].field_info.extra["down_method"] == "annual"
+                and cls.model_fields[aliases[value]].json_schema_extra["down_method"] == "annual"
             ):
                 year_list = values[value].data.index.year.to_list()
                 if len(year_list) > len(set(year_list)):
@@ -101,8 +187,8 @@ class Component(custom_model.CustomModel):
         # find all timeseries attributes in instance
         return [
             attr
-            for attr, field_settings in self.__fields__.items()
-            if field_settings.type_ in ts.Timeseries.__subclasses__()
+            for attr, field_settings in self.model_fields.items()
+            if self.field_is_timeseries(field_info=field_settings)
         ]
 
     @classmethod
@@ -110,7 +196,28 @@ class Component(custom_model.CustomModel):
         pass
 
     @classmethod
-    def _filter_highest_scenario(cls, *, filename: pathlib.Path, input_df: pd.DataFrame, scenarios: list):
+    def model_fields_by_category(cls) -> dict:
+        fields = {}
+        for name, field in cls.model_fields.items():
+            if name in ["attr_path", "name"] or name.startswith("opt_"):
+                continue
+
+            if not field.metadata or not isinstance(field.metadata[-1], Metadata):
+                category = ""
+            else:
+                category = field.metadata[-1].category.value
+
+            if category not in fields:
+                fields[category] = []
+
+            fields[category] += [name]
+
+        return fields
+
+    @classmethod
+    def _filter_highest_scenario(
+        cls, *, filename: pathlib.Path, input_df: pd.DataFrame, scenarios: list
+    ) -> pd.DataFrame:
         """Filter for the highest priority data based on scenario tags.
 
         scenarios_unknown: Scenario tags that aren't known to the Categorical
@@ -175,18 +282,39 @@ class Component(custom_model.CustomModel):
         return input_df.drop(columns=["scenario", "attribute"], errors="ignore")
 
     @classmethod
+    def create_attributes_csv_from_xlwings(
+        cls, wb: "Book", sheet_name: str, save_path: pathlib.Path, overwrite: bool = True
+    ):
+        """Create a CSV in the ``attributes.csv`` format from a spreadsheet using ``xlwings``.
+
+        Args:
+            wb: An ``xlwings`` workbook, assuming a standard tabular format for data layout.
+            sheet_name: Name of worksheet.
+            save_folder: Path to folder that will hold CSV files.
+            overwrite: Whether this method should overwrite an existing attributes.csv file. Otherwise, will append unique values to existing file.
+
+        Returns:
+
+        """
+        data = cls.get_data_from_xlwings(wb=wb, sheet_name=sheet_name)
+
+        cls.save_instance_attributes_csvs(wb=wb, data=data, save_path=save_path, overwrite=overwrite)
+
+    @classmethod
     def _parse_nodate_timeseries_attributes(cls, *, filename: pathlib.Path, input_df: pd.DataFrame, scenarios: list):
         """Temporarily reimplement nodate_timeseries."""
 
         # Find names of timeseries attributes based on class definition
         attribute_names = [
-            attr for attr, field_settings in cls.__fields__.items() if field_settings.type_ == ts.NoDateTimeseries
+            attr
+            for attr, field_settings in cls.model_fields.items()
+            if ts.NoDateTimeseries in cls.get_field_type(field_info=field_settings)
         ]
 
         attribute_names += [
             field_settings.alias
-            for attr, field_settings in cls.__fields__.items()
-            if field_settings.type_ == ts.NoDateTimeseries and field_settings.alias is not None
+            for attr, field_settings in cls.model_fields.items()
+            if ts.NoDateTimeseries in cls.get_field_type(field_info=field_settings) and field_settings.alias is not None
         ]
 
         # TODO: Need to figure out a way to initialize the `timezone` and `DST` attribute
@@ -251,7 +379,8 @@ class Component(custom_model.CustomModel):
                 or (isinstance(ts_data, (pd.Series, dict)) and not ts_data.isin({None, "None"}).any())
             ):
                 try:
-                    ts_attrs[attr] = ts.Timeseries(
+                    ts_cls = cls.get_field_type(field_info=cls.model_fields_with_aliases()[attr])[0]
+                    ts_attrs[attr] = ts_cls(
                         name=f"{filename.stem}:{attr}",
                         data=ts_data,
                         data_dir=pathlib.Path(str(filename).split("interim")[0]).parent,
@@ -259,7 +388,7 @@ class Component(custom_model.CustomModel):
                     )
                 except Exception as e:
                     raise ValueError(
-                        f"Could not create timeseries `{attr}` for Component `{cls.__name__}` `{filename.stem}`"
+                        f"Could not create timeseries `{attr}` for Component `{cls.__name__}` `{filename.stem}`: {ts_data}"
                     ) from e
 
         return ts_attrs
@@ -269,7 +398,7 @@ class Component(custom_model.CustomModel):
         ts_attribute_names = cls.get_timeseries_attribute_names(include_aliases=True)
 
         # Find names of scalar attributes based on class definition
-        attribute_names = [attr for attr, field_settings in cls.__fields__.items() if attr not in ts_attribute_names]
+        attribute_names = [attr for attr in cls.model_fields if attr not in ts_attribute_names]
 
         attribute_names += [
             attr
@@ -345,49 +474,40 @@ class Component(custom_model.CustomModel):
         return_type=dict,
         name: Optional[str] = None,
     ) -> Union[dict[str, "Component"], tuple[str, "Component"]]:
-        """Create Component instance from CSV input file.
+        """Read CSV data file for ``Component`` from ``filename``.
 
-        The CSV input file must have the following mandatory three-column format, with two optional columns
-        (column order does not matter; however, **column header names do matter**):
+        The CSV data file should have the following "long" format, with 3 (or 4) columns:
 
-        +--------------------------------------+------------------+---------+-----------------+---------------------+
-        | timestamp                            | attribute        | value   | unit (optional) | scenario (optional) |
-        +======================================+==================+=========+=================+=====================+
-        | [None or timestamp (hour beginning)] | [attribute name] | [value] | [unit name]     | [scenario name]     |
-        +--------------------------------------+------------------+---------+-----------------+---------------------+
+        +------------------------------------------+------------------+---------+---------------------+
+        | timestamp                                | attribute        | value   | scenario (optional) |
+        +==========================================+==================+=========+=====================+
+        | [``None`` or timestamp (hour beginning)] | [attribute name] | [value] | [scenario name]     |
+        +------------------------------------------+------------------+---------+---------------------+
 
-        **Units**
+        =========
+        Scenarios
+        =========
 
-        Unit conversion is handled by the ``pint`` Python package. Expected attribute units are hard-coded in the Python
-        implementation. If the `pint` package can find an appropiate conversion between the user-specified input of the
-        attribute and the expected unit, it will convert data automatically to the expected unit.
-
-        For example, if the expected unit is MMBtu (named as `million_Btu` or `MBtu` in `pint`), a user can easily
-        enter data in `Btu`, and the code will automatically divide the input value by 1e6.
-
-        **Scenarios**
-
-        Scenarios are handled via an optional `scenario` column. Scenario handling is done via some clever pandas
+        Scenarios are handled via an optional **scenario** column. Scenario handling is done via some clever pandas
         DataFrame sorting. In detail:
 
-        #. The ``scenario`` column is converted to a `pd.Categorical`_, which is an ordered list.
-        #. The ``scenario`` columns is sorted based on the Categorical ordering,
+        #. The ``scenario`` column is converted to a :py:class:`pandas:pandas.Categorical`, which is an ordered list.
+        #. The ``scenario`` columns is sorted based on the scenario ordering defined by the current ``Run``,
            where values with no scenario tag (``None``/``NaN``) are lowest-priority.
         #. The method ``df.groupby.last()`` is used to take the last (highest-priority) value
            (since the dataframe should be sorted from lowest to highest priority scenario tag).
         #. Scenario tags that are not listed in scenarios.csv will be ignored completely (dropped from the dataframe).
 
-        **Duplicate Values**
+        ================
+        Duplicate Values
+        ================
 
         If an attribute is defined multiple times (and for a timeseries, multiple times for the same timestamp),
         the last value entered in the CSV (i.e., furthest down the CSV rows) will be used.
 
-        Args:
-            filename: Name of CSV input file. Defaults to ``attributes.csv``.
-            scenarios: List of optional scenario tags to filter input data in file. Defaults to [].
-            data: Additional data to add to the instance as named attributes. Defaults to {}.
-
-        **Referencing Other CSVs for Timeseries Data**
+        ==========================================
+        Referencing Other CSVs for Timeseries Data
+        ==========================================
 
         To keep the ``attributes.csv`` shorter, user can optionally enter the value of a timeseries as a file path to
         another CSV file instead of entering each timestamped data value in ``attributes.csv``.
@@ -404,11 +524,15 @@ class Component(custom_model.CustomModel):
            The filepath references themselves in ``attributes.csv`` can be scenario-tagged; however, the other CSV file
            is just read in as if it were a ``pd.Series`` with a DateTimeIndex.
 
-        Returns:
-            (C): Instance of Component class.
 
-        .. _pd.Categorical:
-            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Categorical.html
+        ===========================
+        Units Handling & Conversion
+        ===========================
+        Units are specified in data field definitions.
+
+        .. deprecated:: 0.5.0
+           For a period of time, `kit` included optional unit conversion (see https://github.com/e3-/kit/pull/430);
+           however, this functionality needs to be redesigned and has been removed for now.
         """
         # Setting mutable [] or {} as default argument is dangerous, so this is the workaround
         if not scenarios:
@@ -484,6 +608,7 @@ class Component(custom_model.CustomModel):
         Returns:
             data: Combined, "long" DataFrame, where the data is indexed by instance names & scenarios.
         """
+        logger.debug("This is deprecated. Use `dfs_to_csv` to migrate to Excel Tables.")
         sheet = wb.sheets[sheet_name]
 
         # Clear filters applied to sheet
@@ -495,8 +620,16 @@ class Component(custom_model.CustomModel):
             sheet_name = f"'{sheet_name}'"
 
         # Get all named ranges that refer to the current sheet
-        named_ranges: set = {name.name for name in wb.names if name.refers_to.split("!")[0][1:] == sheet_name}
-
+        # 2024-04-15: Workaround due to `wb.names` timing out on macOS because it's slow
+        named_range_macro = wb.macro("ListNamedRanges")
+        named_range_macro()
+        all_names = wb.sheets["__names__"].range("A1").expand().options(pd.DataFrame, index=False, header=False).value
+        all_names.columns = ["name", "address"]
+        named_ranges: set = set(
+            all_names.loc[
+                (all_names["address"] is not None) & (all_names["address"].str.contains(sheet_name)), "name"
+            ].tolist()
+        )
         # By default, the component as a named range must exist at least once on a sheet
         tables = [cls.__name__]
 
@@ -523,7 +656,7 @@ class Component(custom_model.CustomModel):
                 scenario += [[None] * len(index[0])]
 
             # Get name of all possible attributes (including aliases) and putting the sheet name (for named ranges that refer only to Worksheet)
-            attribute_names: set = set(cls.__fields__.keys()) | {f.alias for f in cls.__fields__.values()}
+            attribute_names: set = set(cls.model_fields.keys()) | {f.alias for f in cls.model_fields.values()}
             # If `fully_specified` is true, named range must have the class name (instead of the code trying to find both `scenario` and `Policy.scenario` for example)
             if fully_specified:
                 attribute_names = {f"{table}.{name}" for name in attribute_names}
@@ -633,6 +766,24 @@ class Component(custom_model.CustomModel):
             df.to_csv(file_path, index=False)
         progress_bar.close()
 
+    @classmethod
+    def dfs_to_csv(cls, *, instances: pd.DataFrameGroupBy, wb: Book, dir_str: DirStructure) -> None:
+        """Collect data from Excel interface using ``xlwings``."""
+        # Print out each component CSV
+        progress_bar = tqdm(total=len(instances), display=False, smoothing=None)
+
+        save_path = dir_str.data_interim_dir / cls._SAVE_PATH
+        save_path.mkdir(parents=True, exist_ok=True)
+
+        for name, df in instances:
+            progress_bar.update()
+            excel_progress_bar = str(progress_bar)
+            df.iloc[:, 1:].to_csv(save_path / f"{name}.csv", index=False)
+            wb.app.status_bar = f"Writing {cls.__name__}: {excel_progress_bar} {name}"
+
+        progress_bar.close()
+
+
     def revalidate(self):
         """Abstract method to run additional validations after `Linkage.announce_linkage_to_instances`."""
 
@@ -657,20 +808,14 @@ class Component(custom_model.CustomModel):
         weather_year_start, weather_year_end = weather_years
 
         # find all timeseries attributes in instance
-        timeseries_attrs = [
-            attr
-            for attr, field_settings in self.__fields__.items()
-            if field_settings.type_ in ts.Timeseries.__subclasses__()
-        ]
-
         extrapolated = set()
-        for attr in timeseries_attrs:
+        for attr in self.timeseries_attrs:
             # Don't try resampling empty ts data
             if getattr(self, attr) is None:
                 continue
 
             # Get the resampling settings from the pydantic.Field definition
-            field_settings = self.__fields__[attr].field_info.extra
+            field_settings = self.model_fields[attr].json_schema_extra
 
             # There are now TWO ways to identify toggle timeseries types (hard-coded or via an attribute called `[attr]__type`)
             is_weather_year = ("weather_year" in field_settings and field_settings["weather_year"]) or (
@@ -790,7 +935,7 @@ class Component(custom_model.CustomModel):
     def map_units(cls, row):
         """Return original units for named attribute."""
         try:
-            unit = cls.__fields__[row["attribute"]].field_info.extra["units"]
+            unit = cls.model_fields[row["attribute"]].json_schema_extra["units"]
         except KeyError:
             # Catch exception if unit is not defined for an attribute
             logger.debug(

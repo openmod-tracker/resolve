@@ -8,9 +8,7 @@ from typing import Dict
 from typing import Iterable
 from typing import List
 
-from line_profiler import LineProfiler
 from loguru import logger
-from memory_profiler import profile
 
 
 def map_dict(func: Callable, dict_: Dict[Any, Any]) -> Dict[Any, Any]:
@@ -66,7 +64,7 @@ def sum_not_none(values: Iterable) -> Any:
         values: values to sum
 
     Returns:
-        sum_: sum of values, without those that are None
+        sum of values, without those that are None
     """
     non_none_values = filter_not_none(values)
     if len(non_none_values) == 0:
@@ -108,6 +106,8 @@ def cantor_pairing_function(a: int, b: int) -> int:
 
 
 def profile_time(function, *args, **kwargs):
+    from line_profiler import LineProfiler
+
     def wrapper(*args, **kwargs):
         # profile the construct operation block function and save results to log file
         lp = LineProfiler()
@@ -123,10 +123,11 @@ def profile_time(function, *args, **kwargs):
 
 
 def profile_memory(function, *args, **kwargs):
-    @profile
+    from memory_profiler import profile
+
     def wrapper(*args, **kwargs):
-        return_value = function(*args, **kwargs)
         profiler_output = StringIO()
+        return_value = profile(function)(*args, **kwargs)
         logger.info("Memory Profiler Results:\n%s", profiler_output.getvalue())
         return return_value
 

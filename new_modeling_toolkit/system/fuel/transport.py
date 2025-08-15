@@ -60,7 +60,7 @@ class FuelTransportation(asset.Asset):
             )
 
         from_zones = [
-            fuel_zone_linkage._instance_from.name
+            fuel_zone_linkage.instance_from.name
             for fuel_zone_linkage in self.fuel_zones.values()
             if fuel_zone_linkage.from_zone
         ]
@@ -72,7 +72,7 @@ class FuelTransportation(asset.Asset):
             raise ValueError(f"No zones assigned as 'from' zone of path `{self.name}`.")
 
         to_zones = [
-            fuel_zone_linkage._instance_from.name
+            fuel_zone_linkage.instance_from.name
             for fuel_zone_linkage in self.fuel_zones.values()
             if fuel_zone_linkage.to_zone
         ]

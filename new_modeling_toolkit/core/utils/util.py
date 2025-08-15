@@ -2,10 +2,7 @@ import pathlib
 import shutil
 import time
 
-import pandas as pd
 from loguru import logger
-
-from new_modeling_toolkit.core.utils.core_utils import timer
 
 
 class StreamToLogger:
@@ -47,18 +44,6 @@ class DirStructure:
         self.model_name = model_name
         self.code_dir = code_dir
 
-        # Define paths to various code directories        # resolve code base location
-        self.code_resolve_dir = self.code_dir / "resolve"
-        # recap code base location
-        self.code_recap_dir = self.code_dir / "recap"
-        # reclaim code base location
-        self.code_reclaim_dir = self.code_dir / "reclaim"
-        # visualization code base location
-        self.code_visualization_dir = self.code_dir / "visualization"
-        # testing code base location
-        # TODO: Determine if test directory should be a level up
-        self.code_test_dir = self.code_dir / "tests"
-
         # Define paths to other directories
         # Project directory/ Root directory
         if start_dir is not None:
@@ -66,15 +51,15 @@ class DirStructure:
         else:
             self.proj_dir = self.code_dir.parent
 
+        # testing code base location
+        self.code_test_dir = self.proj_dir / "tests"
+
         # Data directories
         self.data_dir = self.proj_dir / data_folder
         self.data_raw_dir = self.data_dir / "raw"
         self.data_interim_dir = self.data_dir / "interim"
         self.data_settings_dir = self.data_dir / "settings"
         self.data_processed_dir = self.data_dir / "processed"
-
-        # log directory
-        self.logs_dir = self.proj_dir / "logs"
 
         # results directory
         self.results_dir = self.proj_dir / "reports"
@@ -87,17 +72,16 @@ class DirStructure:
             if isinstance(path, pathlib.Path):
                 path.mkdir(parents=True, exist_ok=True)
 
-    def make_simplified_emissions_module_dir(self, simplified_emissions_module_settings_name):
-        timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
-        self.simplified_emissions_module_settings_dir = (
-            self.data_settings_dir / "simplified_emissions_module" / simplified_emissions_module_settings_name
-        )
-        self.output_simplified_emissions_module_dir = (
-            self.results_dir
-            / "simplified_emissions_module"
-            / f"{simplified_emissions_module_settings_name}"
-            / f"{timestamp}"
-        )
+    def make_pathways_dir(self, case_name, log_level: str = "DEBUG"):
+        timestamp = time.strftime("%Y-%m-%d %H-%M-%S")
+        self.pathways_dir = self.data_settings_dir / "pathways" / case_name
+        self.pathways_case = self.results_dir / "pathways" / f"{case_name}" / f"{timestamp}"
+
+        # add copy of inputs to output file
+        shutil.copytree(self.pathways_dir, self.pathways_case)
+
+        logger.add(self.pathways_case / "pathways.log", level=log_level)
+
         self.make_directories()
 
     def make_resolve_dir(self, resolve_settings_name: str, timestamp: str = None, log_level: str = "INFO"):
@@ -105,9 +89,9 @@ class DirStructure:
         if timestamp is not None:
             # Check that the passed timestamp adheres to the desired format
             # Note: this will raise a ValueError if the timestamp cannot be converted to a time object using this format
-            time.strptime(timestamp, "%Y-%m-%d-%H-%M-%S")
+            time.strptime(timestamp, "%Y-%m-%d %H-%M-%S")
         else:
-            timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
+            timestamp = time.strftime("%Y-%m-%d %H-%M-%S")
 
         # resolve settings file location
         self.resolve_settings_dir = self.data_settings_dir / "resolve" / resolve_settings_name
@@ -139,7 +123,7 @@ class DirStructure:
 
     def make_reclaim_dir(self, reclaim_config_name):
         # reclaim config name
-        timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
+        timestamp = time.strftime("%Y-%m-%d %H-%M-%S")
         self.reclaim_config_name = reclaim_config_name
         self.reclaim_config_dir = self.data_settings_dir / "reclaim" / self.reclaim_config_name
 
@@ -169,16 +153,22 @@ class DirStructure:
         self.make_directories()
 
     def make_recap_dir(self, case_name=None, log_level="DEBUG", skip_creating_results_folder=False):
-        timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
+        # Get current time for naming results directory
+        timestamp = time.strftime("%Y-%m-%d %H-%M-%S")
 
         # Specify settings directory
         self.recap_settings_dir = self.data_settings_dir / "recap"
         self.analysis_dir = self.proj_dir / "analysis"
-        self.analysis_input = self.analysis_dir / "Inputs checker"
-        self.analysis_output = self.analysis_dir / "Result Inspection"
+        # TODO: why do we need these? Maybe change once we get to results viewer updates
+        self.analysis_input = self.analysis_dir / "Inputs Checker"
+        self.analysis_output = self.analysis_dir / "Results Inspection"
 
         # [Optional] If case name specified, set up logging/results directory
         if case_name and not skip_creating_results_folder:
+            # Specify day draw maps directory
+            self.day_draw_dir = self.recap_settings_dir / case_name / "day_draw_map"
+            self.day_draw_dir.mkdir(parents=True, exist_ok=True)
+
             # Specify results directory
             self.recap_output_dir = self.results_dir / "recap" / case_name / timestamp
             self.recap_output_dir.mkdir(parents=True, exist_ok=True)
@@ -224,46 +214,3 @@ class DirStructure:
             **kwargs,
         )
         return DirStructure(**copy_kwargs)
-
-
-def validate_sales_shares(system_instance):
-    # TODO (2022-09-27): Move to Pathways module
-    logger.info("Validating sales shares")
-    for stock_rollover_subsector in system_instance.stock_rollover_subsectors.keys():
-        for sales_share_type in [
-            # "sales_share_early_retirement",
-            "sales_share_natural_replacements",
-            # "sales_share_new_stock_additions",
-        ]:
-            sales_shares_by_device = pd.DataFrame()
-            for device in system_instance.stock_rollover_subsectors[stock_rollover_subsector].devices.keys():
-                if getattr(system_instance.devices[device], sales_share_type) is None:
-                    continue
-                sales_shares_by_device[device] = getattr(system_instance.devices[device], sales_share_type).data
-
-            # if the current sales share type is not specified (for example the new stock additions, which are optional)
-            if sales_shares_by_device.empty:
-                continue
-
-            sales_shares_summed = sales_shares_by_device.sum(axis=1)
-            # check if sum of sales shares is more than 1% different from 100% in any year
-            if (((sales_shares_summed - 1).abs() > 0.01) * 1).sum() > 0:
-                raise ValueError(
-                    "Sales shares for {} do not add up to 100% with tolerance of 1%".format(stock_rollover_subsector)
-                )
-
-
-# def validate_prescribed_fuel_blends(system_instance):
-#     print("validating prescribed fuel blends")
-#     for sector in system_instance.sectors.keys():
-#         tmp = 1
-#         system_instance.sectors[sector].sector_candidate_fuel_blending[("Renewable Diesel", "Distillate")]
-
-
-@timer
-def run_non_component_validations(system_instance):
-    """
-    Run validations on system instance that need to look at the entire instance and not just one component at a time.
-    """
-    validate_sales_shares(system_instance)
-    # validate_prescribed_fuel_blends(system_instance)

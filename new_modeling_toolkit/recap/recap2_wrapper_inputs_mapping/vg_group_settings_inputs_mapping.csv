@@ -1,0 +1,6 @@
+﻿column,attribute,helper_function,default_value
+group,name,,
+load_correlations,,,TRUE
+weekends_matter,,,FALSE
+fixed_annual_shape,,,FALSE
+random_seed,random_seed,,

@@ -155,6 +155,12 @@ class TXPath(asset.Asset):
                 # Return first (only) zone in the list
                 return zones[0]
 
+    def revalidate(self):
+        if self.from_zone is None:
+            raise ValueError(f"TXPath `{self.name}` has no `from_zone` assigned. Check your `linkages.csv` file.")
+        if self.to_zone is None:
+            raise ValueError(f"TXPath `{self.name}` has no `to_zone` assigned. Check your `linkages.csv` file.")
+
 
 if __name__ == "__main__":
     test_networks_csv = TXPath.from_dir(data_path=dir_str.data_dir / "interim" / "tx_paths")

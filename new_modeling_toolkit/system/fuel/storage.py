@@ -2,10 +2,10 @@ from typing import Optional
 
 import pandas as pd
 import pyomo.environ as pyo
-from pydantic import confloat
 from pydantic import Field
 from pydantic import PositiveFloat
 from pydantic import root_validator
+from typing_extensions import Annotated
 
 from new_modeling_toolkit.common.asset import plant
 from new_modeling_toolkit.core import linkage
@@ -42,7 +42,7 @@ class FuelStorage(plant.Plant):
         down_method="annual",
     )
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def validate_storage_duration(cls, values):
         if values["fuel_storage_duration"] is not None and values["planned_storage_capacity"] is not None:
             raise ValueError(
@@ -77,7 +77,7 @@ class FuelStorage(plant.Plant):
     """
     Unnecessary, since we have one required efficiency for charging and discharging
     """
-    # @root_validator
+    # @root_validator(skip_on_failure=True)
     # def validate_charging_efficiencies(cls, values):
     #    if (
     #        values["fuel_storage_charging_efficiency_mmbtu_per_mwh"] is None
@@ -88,7 +88,7 @@ class FuelStorage(plant.Plant):
     #            f"'fuel_storage_charging_efficiency_mmbtu_per_mmbtu' must be defined."
     #        )
 
-    # @root_validator
+    # @root_validator(skip_on_failure=True)
     # def validate_discharging_efficiencies(cls, values):
     #    if (
     #        values["fuel_storage_discharging_efficiency_mmbtu_per_mwh"] is None
@@ -99,7 +99,7 @@ class FuelStorage(plant.Plant):
     #            f"'fuel_storage_discharging_efficiency_mmbtu_per_mmbtu' must be defined."
     #        )
 
-    fuel_storage_parasitic_loss: confloat(ge=0, le=1) = Field(
+    fuel_storage_parasitic_loss: Annotated[float, Field(ge=0, le=1)] = Field(
         0.0,
         description="Hourly state of charge losses",
     )

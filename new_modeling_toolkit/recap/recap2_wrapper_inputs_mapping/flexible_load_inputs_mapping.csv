@@ -1,0 +1,9 @@
+﻿column,attribute,helper_function,default_value
+name,name,,
+zone,,get_zone,
+capacity_mw,capacity_planned,,
+max_shift_hr,adjacency,,
+scaling_factor,,,1
+commission_date,,,1/1/1900
+retirement_date,,,1/1/2100
+include,,,1

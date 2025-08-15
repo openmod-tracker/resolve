@@ -1,0 +1,10 @@
+﻿column,attribute,helper_function,default_value
+profile_name,name,,
+zone,,get_zone,
+group,,get_resource_group,
+capacity_mw_energy_mwh,capacity_planned,,
+scale_by,,,capacity
+prm_accounting,,,supply_resource
+commission_date,,,1/1/1900
+retirement_date,,,1/1/2100
+include,,,1

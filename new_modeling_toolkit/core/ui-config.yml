@@ -1,0 +1,8 @@
+template_path: ../../E3 Model Template.xlsm
+sheets:
+  - name: Generic
+    title: Generic Resource
+    sections:
+      - name: Generic Resource
+        components:
+          - system.electric.resources.generic.GenericResource

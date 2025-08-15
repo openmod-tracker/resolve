@@ -7,6 +7,7 @@ import pandas as pd
 import pyomo.environ as pyo
 from loguru import logger
 from pydantic import Field
+from pydantic import model_validator
 from pydantic import root_validator
 
 from new_modeling_toolkit.core import component
@@ -20,6 +21,7 @@ from new_modeling_toolkit.core.utils.core_utils import timer
 class TargetBasis(enum.Enum):
     SALES = "sales"
     SYSTEM_LOAD = "system load"
+    HOURS = "hours"
 
 
 @enum.unique
@@ -87,8 +89,8 @@ class Policy(component.Component):
             "likely absolute while an RPS policy is a percentage of sales."
         )
     )
-    target_adjustment: Optional[ts.NumericTimeseries] = Field(
-        None,
+    target_adjustment: ts.NumericTimeseries = Field(
+        default_factory=ts.NumericTimeseries.zero,
         default_freq="YS",
         up_method="interpolate",
         down_method="annual",
@@ -103,7 +105,7 @@ class Policy(component.Component):
     opt_policy_lhs: Optional[ts.NumericTimeseries] = Field(None, description="Total RHS achieved")
 
     # Price and target cannot both be defined
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def price_or_target(cls, values):
         if sum(values[i] is not None for i in ["price", "target"]) != 1:
             raise ValueError(
@@ -141,10 +143,10 @@ class Policy(component.Component):
         #  and did that at a later step
         total_load = pd.concat(
             [
-                link._instance_from.scaled_profile_by_modeled_year[year].data
+                link.instance_from.scaled_profile_by_modeled_year[year].data
                 * link.multiplier.data.loc[f"{year}-01-01"]
                 / (
-                    link._instance_from.td_losses_adjustment.data.loc[f"{year}-01-01"]
+                    link.instance_from.td_losses_adjustment.data.loc[f"{year}-01-01"]
                     if self.target_basis == TargetBasis.SALES
                     else 1
                 )  # put back into sales if needed
@@ -192,7 +194,7 @@ class HourlyEnergyStandard(Policy):
     """Ideally this would be merged with `AnnualEnergyStandard`, but to preserve backward compatibility for now, keeping separate."""
 
     slack_penalty: ts.NumericTimeseries = Field(
-        default_factory=ts.Timeseries.default_penalty,
+        default_factory=lambda: ts.Timeseries.default_factory(10_000),
         default_freq="H",
         up_method="interpolate",
         down_method="mean",
@@ -218,15 +220,17 @@ class HourlyEnergyStandard(Policy):
     ############################
     # Optimization Constraints #
     ############################
+    @model_validator(mode="after")
+    def validate_target_units(self):
+        if self.target_basis == TargetBasis.HOURS:
+            assert (
+                self.target_units == TargetUnits.ABSOLUTE
+            ), "When using an 'hours' basis as a target for CES, you **must** set the target units in absolute terms (i.e., # of hours per year)"
+        return self
+
     def _construct(self, model: pyo.ConcreteModel, temporal_settings: "TemporalSettings"):
         # fmt: off
         model.blocks[self.name].slack_up = pyo.Var(model.TIMEPOINTS, within=pyo.NonNegativeReals)
-        @model.blocks[self.name].Expression(model.TIMEPOINTS)
-        def target(block, model_year, rep_period, hour):
-            return (
-                self._target_by_model_year[model_year].slice_by_timepoint(temporal_settings, model_year, rep_period, hour) +
-                self.target_adjustment.slice_by_year(model_year)
-            )
 
         _policy_resources = pyo.Set(initialize=sorted(self.resources.keys()))
 
@@ -234,19 +238,89 @@ class HourlyEnergyStandard(Policy):
         def resource_contribution(block, resource, model_year, rep_period, hour):
             return (
                 self.resources[resource].multiplier.slice_by_year(model_year) *
-                block.model().Provide_Power_MW[resource, model_year, rep_period, hour]
+                block.model().Asset_Net_Power_MW[resource, model_year, rep_period, hour]
             )
 
-        @model.blocks[self.name].Constraint(model.TIMEPOINTS)
-        def constraint(block, model_year, rep_period, hour):
-            return self.constraint_operator.operator(
-                sum(
-                    block.resource_contribution[resource, model_year, rep_period, hour]
-                    for resource in _policy_resources
-                ) +
-                block.slack_up[model_year, rep_period, hour],
-                block.target[model_year, rep_period, hour],
-            )
+        if self.target_basis != TargetBasis.HOURS:
+            @model.blocks[self.name].Expression(model.TIMEPOINTS)
+            def target(block, model_year, rep_period, hour):
+                if self.target_units == TargetUnits.ABSOLUTE:
+                    return (
+                        self.target.slice_by_year(model_year) +
+                        self.target_adjustment.slice_by_year(model_year)
+                    )
+                else:
+                    return (
+                        self._target_by_model_year[model_year].slice_by_timepoint(temporal_settings, model_year, rep_period, hour) +
+                        self.target_adjustment.slice_by_year(model_year)
+                    )
+
+            @model.blocks[self.name].Constraint(model.TIMEPOINTS)
+            def constraint(block, model_year, rep_period, hour):
+                return self.constraint_operator.operator(
+                    sum(
+                        block.resource_contribution[resource, model_year, rep_period, hour]
+                        for resource in _policy_resources
+                    ) +
+                    block.slack_up[model_year, rep_period, hour],
+                    block.target[model_year, rep_period, hour],
+                    )
+
+        elif self.target_basis == TargetBasis.HOURS:
+            model.blocks[self.name].clean_hour_indicator = pyo.Var(model.TIMEPOINTS, within=pyo.Binary)
+
+            @model.blocks[self.name].Expression(model.MODEL_YEARS)
+            def target(block, model_year):
+                return (
+                    self.target.slice_by_year(model_year) +
+                    self.target_adjustment.slice_by_year(model_year)
+                )
+            @model.blocks[self.name].Constraint(model.TIMEPOINTS)
+            def clean_hour_eligibility_constraint(block, model_year, rep_period, hour):
+                """Use big-M method to set `clean_hour_indicator` indicator variable."""
+                # M = sum(
+                #     block.model().Plant_Provide_Power_Capacity_In_Timepoint_MW[resource, model_year, rep_period, hour]
+                #     for resource in _policy_resources
+                # )
+
+                return (
+                    block.clean_hour_indicator[model_year, rep_period, hour] * (
+                        sum(block.resource_contribution[resource, model_year, rep_period, hour] for resource in _policy_resources) -
+                        sum(
+                            self.loads[load].multiplier.slice_by_year(model_year) *
+                            self.loads[load].instance_from.get_load(temporal_settings, model_year, rep_period, hour)
+                            for load in self.loads.keys()
+                        )
+                    )
+                    >=
+                    0
+                )
+
+            @model.blocks[self.name].Constraint(model.MODEL_YEARS)
+            def hourly_accounting_constraint(block, model_year):
+                return (
+                    sum(
+                        block.model().rep_period_weight[rep_period]
+                        * block.model().rep_periods_per_model_year[model_year]
+                        * block.clean_hour_indicator[model_year, rep_period, hour]
+                        for hour in block.model().HOURS
+                        for rep_period in block.model().REP_PERIODS
+                    )
+                    >=
+                    block.target[model_year]
+                )
+
+            @model.blocks[self.name].Constraint(model.TIMEPOINTS)
+            def storage_charge_from_clean(block, model_year, rep_period, hour):
+                """Eligible generation should be greater than eligible storage charging (a negative value for Asset_Net_Power)."""
+                return (
+                    sum(block.resource_contribution[resource, model_year, rep_period, hour] for resource in _policy_resources)
+                    >=
+                    0
+                )
+
+        else:
+            raise NotImplementedError(f"{self.target_basis} not recognized.")
 
         @model.blocks[self.name].Expression(model.MODEL_YEARS)
         def slack_penalty(block, model_year):
@@ -259,6 +333,7 @@ class HourlyEnergyStandard(Policy):
                 for hour in block.model().HOURS
                 for rep_period in block.model().REP_PERIODS
             )
+
         # fmt: on
 
     def check_constraint_violations(self, model: pyo.ConcreteModel):
@@ -332,17 +407,17 @@ class AnnualEmissionsPolicy(Policy):
         candidate_fuels_without_multiplier = {
             name
             for name, fuel in self.candidate_fuels.items()
-            if fuel._instance_from.policies[self.name].multiplier is None
+            if fuel.instance_from.policies[self.name].multiplier is None
         }
 
         resources_linked_to_candidate_fuels_without_multiplier = {
             name
             for name, r in self.resources.items()
-            if [fuel for fuel in r._instance_from.candidate_fuels.keys() if fuel in candidate_fuels_without_multiplier]
+            if [fuel for fuel in r.instance_from.candidate_fuels.keys() if fuel in candidate_fuels_without_multiplier]
         }
 
         resources_without_multiplier = {
-            name for name, r in self.resources.items() if r._instance_from.policies[self.name].multiplier is None
+            name for name, r in self.resources.items() if r.instance_from.policies[self.name].multiplier is None
         }
 
         invalid_resources = resources_without_multiplier & resources_linked_to_candidate_fuels_without_multiplier
@@ -359,17 +434,17 @@ class AnnualEmissionsPolicy(Policy):
         candidate_fuels_with_multiplier = {
             name
             for name, fuel in self.candidate_fuels.items()
-            if fuel._instance_from.policies[self.name].multiplier is not None
+            if fuel.instance_from.policies[self.name].multiplier is not None
         }
 
         resources_linked_to_candidate_fuels_with_multiplier = {
             name
             for name, r in self.resources.items()
-            if [fuel for fuel in r._instance_from.candidate_fuels.keys() if fuel in candidate_fuels_with_multiplier]
+            if [fuel for fuel in r.instance_from.candidate_fuels.keys() if fuel in candidate_fuels_with_multiplier]
         }
 
         resources_with_multiplier = {
-            name for name, r in self.resources.items() if r._instance_from.policies[self.name].multiplier is not None
+            name for name, r in self.resources.items() if r.instance_from.policies[self.name].multiplier is not None
         }
 
         invalid_resources = resources_with_multiplier & resources_linked_to_candidate_fuels_with_multiplier
@@ -466,10 +541,10 @@ class PlanningReserveMargin(Policy):
         resources_without_elcc_linked_to_policy = {
             name
             for name, r in self.resources.items()
-            if not [e for e in r._instance_from.elcc_surfaces.values() if self.name in e._instance_to.policies]
+            if not [e for e in r.instance_from.elcc_surfaces.values() if self.name in e.instance_to.policies]
         }
         resources_without_nqc = {
-            name for name, r in self.resources.items() if r._instance_from.policies[self.name].multiplier is None
+            name for name, r in self.resources.items() if r.instance_from.policies[self.name].multiplier is None
         }
 
         resources_without_elcc_or_nqc = resources_without_elcc_linked_to_policy & resources_without_nqc
@@ -487,13 +562,13 @@ class PlanningReserveMargin(Policy):
             # 2. There cannot be more than one ELCC surface for a resource-policy pair
             resources_with_multiple_elccs = {}
             for r in self.resources.values():
-                if r._instance_from.elcc_surfaces:
+                if r.instance_from.elcc_surfaces:
                     # Get set of ELCCs assigned to resource
-                    resource_elccs = set(r._instance_from.elcc_surfaces.keys())
+                    resource_elccs = set(r.instance_from.elcc_surfaces.keys())
                     # Check set intersection
                     elcc_intersection = resource_elccs.intersection(policy_elccs)
                     if len(elcc_intersection) > 1:
-                        resources_with_multiple_elccs[r._instance_from.name] = elcc_intersection
+                        resources_with_multiple_elccs[r.instance_from.name] = elcc_intersection
 
             if resources_with_multiple_elccs:
                 num_errors += len(resources_with_multiple_elccs)
@@ -504,10 +579,10 @@ class PlanningReserveMargin(Policy):
 
             # 3. There cannot be both an ELCC and NQC for the same resource
             resources_with_both_elcc_nqc = [
-                r._instance_from.name
+                r.instance_from.name
                 for r in self.resources.values()
-                if r._instance_from.elcc_surfaces
-                and set(r._instance_from.elcc_surfaces.keys()).intersection(policy_elccs)
+                if r.instance_from.elcc_surfaces
+                and set(r.instance_from.elcc_surfaces.keys()).intersection(policy_elccs)
                 and r.multiplier is not None
             ]
 

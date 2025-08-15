@@ -44,7 +44,7 @@ class NoDateTimeseries(custom_model.CustomModel):
     # HIDDEN FIELDS #
     #################
     _date_created: datetime.datetime = PrivateAttr(datetime.datetime.now())
-    _as_dict: Optional[dict]
+    _as_dict: Optional[dict] = None
 
     ###################
     # REQUIRED FIELDS #
@@ -79,7 +79,7 @@ class Timeseries(custom_model.CustomModel):
     weather_year: bool = False
     type: Optional[TimeseriesType] = None
     data_dir: Optional[pathlib.Path] = None
-    _freq: Optional[str] = None
+    freq_: Optional[str] = None
 
     def dict(self, **kwargs):
         """Need to exclude `_data_dict` attributes to avoid recursion error when saving to JSON."""
@@ -96,6 +96,12 @@ class Timeseries(custom_model.CustomModel):
     ###################################################################################################################
     # CLASS METHODS
     ###################################################################################################################
+
+    @classmethod
+    def default_factory(cls, value: float = 0):
+        """Migrate all the other defaults to this one."""
+        return cls(name="default", data=pd.Series({pd.to_datetime("1/1/1900"): value}))
+
     @classmethod
     def zero(cls):
         return cls(name="zeroes", data=pd.Series({pd.to_datetime("1/1/1900"): 0}))
@@ -103,10 +109,6 @@ class Timeseries(custom_model.CustomModel):
     @classmethod
     def one(cls):
         return cls(name="ones", data=pd.Series({pd.to_datetime("1/1/1900"): 1}))
-
-    @classmethod
-    def default_penalty(cls):
-        return cls(name="ones", data=pd.Series({pd.to_datetime("1/1/1900"): 10_000}))
 
     @classmethod
     def infinity(cls):
@@ -136,6 +138,13 @@ class Timeseries(custom_model.CustomModel):
         - Convert a dictionary to a pd.Series (assumes that the keys are already datetimes, as done in `Component.from_csv`)
         - Parse a string as a file path referencing another CSV file that can be read in as a pd.Series
         """
+        # Very hacky :(
+        if values is None:
+            return values
+        # Transform it into the right kind of subclass
+        elif isinstance(values, Timeseries) or issubclass(values.__class__, Timeseries):
+            return cls(**values.model_dump())
+
         if len(values["data"]) == 0:
             values["data"] = 0
         elif isinstance(values["data"], pd.Series):
@@ -256,9 +265,12 @@ class Timeseries(custom_model.CustomModel):
 
     @property
     def freq(self):
-        if self._freq is None:
-            self._freq = pd.infer_freq(self.data.index)
-        return self._freq
+        if self.freq_ is None:
+            if self.data.index.freq:
+                self.freq_ = self.data.index.freq
+            else:
+                self.freq_ = pd.infer_freq(self.data.index)
+        return self.freq_
 
     @property
     def data_dict(self):
@@ -273,6 +285,13 @@ class Timeseries(custom_model.CustomModel):
             self._data_dict = self.data.to_dict()
 
         return self._data_dict
+
+    @property
+    def days_in_year(self) -> pd.Series:
+        """Returns the number of days in each year of a timeseries"""
+        is_leap_year = [calendar.isleap(year) for year in self.data.index.year]
+        days_in_year = pd.Series(data=[366 if leap_year else 365 for leap_year in is_leap_year], index=self.data.index)
+        return days_in_year
 
     ###################################################################################################################
     # METHODS
@@ -410,6 +429,10 @@ class Timeseries(custom_model.CustomModel):
             df = df.resample(rule=frequency).ffill()
         elif method == "bfill":
             df = df.resample(rule=frequency).bfill()
+        elif method is None:
+            df = df
+        else:
+            raise ValueError(f"Unsupported argument for resample_up(): method=`{method}`")
 
         return df
 
@@ -440,6 +463,8 @@ class Timeseries(custom_model.CustomModel):
         elif method == "first":
             new_index = df.resample(rule=frequency).sum().index
             df = df.reindex(index=new_index)
+        elif method is None:
+            df = df
         else:
             raise ValueError(f"Unsupported argument for resample_down(): method=`{method}`")
 
@@ -490,16 +515,20 @@ class Timeseries(custom_model.CustomModel):
         self.weather_year = True
 
     def repeat_ts(self, repeat_year_dict):
-        """
-        Replicate the timeseries for certain times.
+        """Replicate the timeseries for certain times.
+
         Args:
             repeat_year_dict: a dictionary between weather/load year and data year.
-                        E.g., for DR profiles, the dictionary can be {extended load year : one year of raw DR data};
-                        E.g., for Hydro profiles, the dictionary can be {extended load year : shuffled hydro year}
+            e.g., for DR profiles, the dictionary can be {extended load year : one year of raw DR data};
+            e.g., for Hydro profiles, the dictionary can be {extended load year : shuffled hydro year}
+
         """
         years = list(repeat_year_dict.keys())
         new_index = pd.date_range(
-            start=pd.Timestamp(min(years), 1, 1, 0), end=pd.Timestamp(max(years), 12, 31, 23), freq=self.freq
+            start=pd.Timestamp(min(years), 1, 1, 0),
+            end=pd.Timestamp(max(years), 12, 31, 23),
+            freq=self.freq,
+            name=self.data.index.name,
         )
         data_by_year = self.data.groupby(self.data.index.year)
         data_repeated = pd.Series()
@@ -533,6 +562,8 @@ class Timeseries(custom_model.CustomModel):
 
 
 class BooleanTimeseries(Timeseries):
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("data")
     def validate_data_is_boolean(cls, data, values):
         if data.dtype != bool:
@@ -546,6 +577,8 @@ class BooleanTimeseries(Timeseries):
 
 
 class NumericTimeseries(Timeseries):
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("data")
     def validate_data_is_numeric(cls, data, values):
         """Try to coerce data to be numeric."""
@@ -553,6 +586,8 @@ class NumericTimeseries(Timeseries):
 
 
 class FractionalTimeseries(Timeseries):
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("data")
     def validate_data_is_fractional(cls, data, values):
         data = pd.to_numeric(data)
@@ -560,7 +595,3 @@ class FractionalTimeseries(Timeseries):
             df_slice = data[(data < 0) | (data > 1)]
             raise ValueError(f"Values for timeseries '{values['name']}' not all fractional, see values: \n{df_slice}")
         return data
-
-
-if __name__ == "__main__":
-    Main()

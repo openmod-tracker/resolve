@@ -2,17 +2,20 @@ import enum
 import os
 import pathlib
 import typing
+from decimal import Decimal
 from typing import List
 from typing import Optional
 
+import numpy as np
 import pandas as pd
 import pydantic
 from loguru import logger
+from pydantic import Field
 from tqdm import tqdm
+from typing_extensions import Annotated
 
 from new_modeling_toolkit import get_units
 from new_modeling_toolkit.core import component
-from new_modeling_toolkit.core.custom_model import convert_str_float_to_int
 from new_modeling_toolkit.core.temporal import timeseries as ts
 
 
@@ -42,16 +45,17 @@ class Linkage(component.Component):
     # CLASS ATTRIBUTES #
     ####################
 
-    _RELATIONSHIP_TYPE: LinkageRelationshipType
+    _RELATIONSHIP_TYPE: typing.ClassVar[LinkageRelationshipType]
 
     _instances: typing.ClassVar = {}
-    _component_type_from: typing.ClassVar = None
-    _component_type_to: typing.ClassVar = None
-    _class_descriptor: typing.ClassVar = ""  # This is the name for printing the info message
-    _instance_from: component.Component
-    _instance_to: component.Component
+    _component_type_from: str
+    _component_type_to: str
+    instance_from: component.Component | None = (
+        None  # Not ideal, since a linkage should only exist if there are linked instances
+    )
+    instance_to: component.Component | None = None
     # Filename attributes
-    _attribute_file: typing.ClassVar = None
+    _attribute_file: typing.ClassVar[str | None] = None
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -63,10 +67,10 @@ class Linkage(component.Component):
             Linkage._instances[self.__class__.__name__].append(self)
 
     def dict(self, **kwargs):
-        """Need to exclude `_instance_from`, `_instance_to` attributes to avoid recursion error when saving to JSON."""
-        attrs_to_exclude = {"attr_path", "_instance_from", "_instance_to", "_component_type_from", "_component_type_to"}
+        """Need to exclude `instance_from`, `instance_to` attributes to avoid recursion error when saving to JSON."""
+        attrs_to_exclude = {"attr_path", "instance_from", "instance_to", "_component_type_from", "_component_type_to"}
 
-        dct = super(Linkage, self).dict(exclude=attrs_to_exclude, exclude_defaults=True, exclude_none=True)
+        dct = super(Linkage, self).model_dump(exclude=attrs_to_exclude, exclude_defaults=True, exclude_none=True)
 
         return dct
 
@@ -133,11 +137,14 @@ class Linkage(component.Component):
         # Read in _attribute_file data as needed
         linkage_attributes = None
         if cls._attribute_file is not None:  # Read in CSV attributes file if it exists
-            input_df = pd.read_csv(pathlib.Path(dir_path) / cls._attribute_file)
+            input_df = pd.read_csv(pathlib.Path(dir_path) / cls._attribute_file, header=0)
             linkage_attributes = cls._filter_scenarios(
                 linkages_df=input_df, scenarios=scenarios, filepath=pathlib.Path(dir_path) / cls._attribute_file
             )
-            linkage_attributes = linkage_attributes.groupby(["component_from", "component_to"])
+            if len(linkage_attributes) == 0:
+                linkage_attributes = None
+            else:
+                linkage_attributes = linkage_attributes.groupby(["component_from", "component_to"])
 
         # Construct linkage instances
         unmatched_linkages = []
@@ -151,8 +158,8 @@ class Linkage(component.Component):
             if cls == AllToPolicy:
                 component_type_from = find_component_type(components_dict, name_from)
             else:
-                component_type_from = cls._component_type_from
-            component_type_to = cls._component_type_to
+                component_type_from = cls._component_type_from.get_default()
+            component_type_to = cls._component_type_to.get_default()
 
             # obtain the linked inst from and to from the components dictionary
             instance_from = (
@@ -165,7 +172,7 @@ class Linkage(component.Component):
             else:
                 if linkage_attributes is None or (name_from, name_to) not in linkage_attributes.groups:
                     linkage_instance = cls(
-                        name=(name_from, name_to), _instance_from=instance_from, _instance_to=instance_to
+                        name=(name_from, name_to), instance_from=instance_from, instance_to=instance_to
                     )
                 else:
                     _, linkage_instance = cls._parse_vintages(
@@ -175,7 +182,7 @@ class Linkage(component.Component):
                         ),
                         separate_vintages=False,
                         scenarios=scenarios,
-                        data={"_instance_from": instance_from, "_instance_to": instance_to},
+                        data={"instance_from": instance_from, "instance_to": instance_to},
                         name=(name_from, name_to),
                     ).popitem()
 
@@ -212,15 +219,13 @@ class Linkage(component.Component):
                 desc=f"Loading {cls.__name__}".rjust(32),
                 bar_format="{l_bar}{bar:30}{r_bar}{bar:-10b}",
             ):
-                logger.debug(
-                    f"Announcing linkage between '{linkage._instance_from.name}', '{linkage._instance_to.name}'"
-                )
+                logger.debug(f"Announcing linkage between '{linkage.instance_from.name}', '{linkage.instance_to.name}'")
                 # Unpack the tuple
                 name_from, name_to = linkage.name
                 # instance to look at, attribute to look at & append opposing component instance, name of opposing component instance
                 linkage_tuple = [
-                    (linkage._instance_to, linkage._component_type_from, name_from),
-                    (linkage._instance_from, linkage._component_type_to, name_to),
+                    (linkage.instance_to, linkage._component_type_from, name_from),
+                    (linkage.instance_from, linkage._component_type_to, name_to),
                 ]
                 # TODO (2021-11-16): Related to #380, can simplify this (if default linkage attribute is {} instead of None)
                 for instance, attr, name in linkage_tuple:
@@ -336,7 +341,7 @@ class ResourceToReserve(Linkage):
     )
     # TODO (2022-02-21): Non-spinning reserves cannot be represented with these options, since they can also include offline capacity.
 
-    max_fraction_of_capacity: pydantic.condecimal(ge=0, le=1) = pydantic.Field(
+    max_fraction_of_capacity: Annotated[Decimal, Field(ge=0, le=1)] = pydantic.Field(
         1,
         description="Max % of a resource's online capacity (e.g., committed capacity for unit commitment resources) "
         "that can be used to provide operating reserve.",
@@ -519,26 +524,6 @@ class AssetToZone(Linkage):
     # None
 
 
-class CandidateFuelToFinalFuel(Linkage):
-    ####################
-    # CLASS ATTRIBUTES #
-    ####################
-    _RELATIONSHIP_TYPE = LinkageRelationshipType.MANY_TO_MANY
-    _class_descriptor = "candidate fuels → final fuels"
-    _component_type_from = "candidate_fuels"
-    _component_type_to = "final_fuels"
-    _attribute_file = "candidate_fuels_to_final_fuels.csv"
-
-    ###################
-    # INSTANCE FIELDS #
-    ###################
-    blend_limit_fraction: Optional[ts.FractionalTimeseries] = pydantic.Field(
-        default_freq="YS",
-        up_method="interpolate",
-        down_method="annual",
-    )
-
-
 class CandidateFuelToPollutant(Linkage):
     ####################
     # CLASS ATTRIBUTES #
@@ -583,6 +568,73 @@ class CandidateFuelToPollutant(Linkage):
 
     upstream_emissions_trajectory_override: typing.Optional[ts.NumericTimeseries] = pydantic.Field(
         None, default_freq="YS", up_method="interpolate", down_method="annual", units=get_units
+    )
+
+    # attributes that will be set during stock rollover calculations
+    out_net_emissions: Optional[ts.NumericTimeseries] = pydantic.Field(
+        default=ts.NumericTimeseries(
+            name="out_net_emissions",
+            data=pd.Series({pd.to_datetime("1/1/1900"): np.nan}),
+        ),
+        default_freq="YS",
+        up_method="interpolate",
+        down_method="annual",
+        weather_year=False,
+    )
+
+    out_gross_emissions: Optional[ts.NumericTimeseries] = pydantic.Field(
+        default=ts.NumericTimeseries(
+            name="out_gross_emissions",
+            data=pd.Series({pd.to_datetime("1/1/1900"): np.nan}),
+        ),
+        default_freq="YS",
+        up_method="interpolate",
+        down_method="annual",
+        weather_year=False,
+    )
+
+    out_upstream_emissions: Optional[ts.NumericTimeseries] = pydantic.Field(
+        default=ts.NumericTimeseries(
+            name="out_upstream_emissions",
+            data=pd.Series({pd.to_datetime("1/1/1900"): np.nan}),
+        ),
+        default_freq="YS",
+        up_method="interpolate",
+        down_method="annual",
+        weather_year=False,
+    )
+
+    out_net_emissions_CO2e: Optional[ts.NumericTimeseries] = pydantic.Field(
+        default=ts.NumericTimeseries(
+            name="out_net_emissions_CO2e",
+            data=pd.Series({pd.to_datetime("1/1/1900"): np.nan}),
+        ),
+        default_freq="YS",
+        up_method="interpolate",
+        down_method="annual",
+        weather_year=False,
+    )
+
+    out_gross_emissions_CO2e: Optional[ts.NumericTimeseries] = pydantic.Field(
+        default=ts.NumericTimeseries(
+            name="out_gross_emissions_CO2e",
+            data=pd.Series({pd.to_datetime("1/1/1900"): np.nan}),
+        ),
+        default_freq="YS",
+        up_method="interpolate",
+        down_method="annual",
+        weather_year=False,
+    )
+
+    out_upstream_emissions_CO2e: Optional[ts.NumericTimeseries] = pydantic.Field(
+        default=ts.NumericTimeseries(
+            name="out_upstream_emissions_CO2e",
+            data=pd.Series({pd.to_datetime("1/1/1900"): np.nan}),
+        ),
+        default_freq="YS",
+        up_method="interpolate",
+        down_method="annual",
+        weather_year=False,
     )
 
 
@@ -781,7 +833,7 @@ class ZoneToTransmissionPath(Linkage):
     from_zone: bool = False
     to_zone: bool = False
 
-    @pydantic.root_validator
+    @pydantic.root_validator(skip_on_failure=True)
     def linkage_is_from_zone_xor_to_zone(cls, values):
         """Validate that exactly one of `from_zone` and `to_zone` is set to True."""
         if not values["from_zone"] and not values["to_zone"]:
@@ -815,7 +867,7 @@ class FuelZoneToFuelTransportation(Linkage):
     from_zone: bool = False
     to_zone: bool = False
 
-    @pydantic.root_validator
+    @pydantic.root_validator(skip_on_failure=True)
     def linkage_is_from_zone_xor_to_zone(cls, values):
         """Validate that exactly one of `from_zone` and `to_zone` is set to True."""
         if not values["from_zone"] and not values["to_zone"]:
@@ -916,7 +968,7 @@ class AllToPolicy(Linkage):
     deliverability_status: DeliverabilityStatus = DeliverabilityStatus.BOTH
 
     # Used when Transmission Path to Policy Linkage
-    @pydantic.root_validator
+    @pydantic.root_validator(skip_on_failure=True)
     def validate_single_xor_bidirectional_multiplier(cls, values):
         """Validate that the linkage either has both 'forward_dir_multiplier' & 'reverse_dir_multiplier' defined,
         xor only has 'multiplier' defined. The two types of multipliers shouldn't exist at the same time."""
@@ -969,10 +1021,7 @@ class AssetToELCC(Linkage):
     elcc_axis_index: typing.Optional[int] = None
     elcc_axis_multiplier: typing.Optional[float] = None
 
-    # Convert strings that look like floats to integers for integer fields
-    _convert_int = pydantic.validator("elcc_axis_index", allow_reuse=True, pre=True)(convert_str_float_to_int)
-
-    @pydantic.root_validator
+    @pydantic.root_validator(skip_on_failure=True)
     def has_axis_index_if_multiplier(cls, values):
         if values["elcc_axis_multiplier"] is not None:
             assert values["elcc_axis_index"] is not None, (
@@ -1029,149 +1078,92 @@ def find_component_type(components_dict: dict[str, dict[str, component.Component
         return matching_component_types[0]
 
 
-class DeviceToFinalFuel(Linkage):
+class XToFinalFuel(Linkage):
     ####################
     # CLASS ATTRIBUTES #
     ####################
+    _RELATIONSHIP_TYPE = LinkageRelationshipType.ONE_TO_MANY
 
-    _class_descriptor = "devices → final fuels"
-    _component_type_from = "devices"
+    _class_descriptor = "component → final fuels"
+    _component_type_from = "component"
     _component_type_to = "final_fuels"
-    _attribute_file = "devices_to_final_fuels.csv"
-
-    ###################
-    # INSTANCE FIELDS #
-    ###################
-    fuel_share_of_service_demand: typing.Optional[str] = None
-
-    device_efficiency: ts.NumericTimeseries = pydantic.Field(
-        default_freq="YS", up_method="interpolate", down_method="annual", units=get_units("device_efficiency")
-    )
+    _attribute_file = "component_to_final_fuels.csv"
 
     # attributes that will be set during stock rollover calculations
-    out_final_energy_demand: typing.Optional[ts.NumericTimeseries] = pydantic.Field(
-        default_freq="YS", up_method="interpolate", down_method="annual", units=get_units("out_final_energy_demand")
-    )
-
-
-class StockRolloverSubsectorToDevice(Linkage):
-    ####################
-    # CLASS ATTRIBUTES #
-    ####################
-
-    _class_descriptor = "stock rollover subsectors → devices"
-    _component_type_from = "stock_rollover_subsectors"
-    _component_type_to = "devices"
-    _attribute_file = "stock_rollover_subsectors_to_devices.csv"
-
-    ###################
-    # INSTANCE FIELDS #
-    ###################
-
-
-class BuildingShellSubsectorToBuildingShellType(Linkage):
-    ####################
-    # CLASS ATTRIBUTES #
-    ####################
-
-    _class_descriptor = "building shell subsectors → building shell types"
-    _component_type_from = "building_shell_subsectors"
-    _component_type_to = "building_shell_types"
-    _attribute_file = "building_shell_subsectors_to_building_shell_types.csv"
-
-    ###################
-    # INSTANCE FIELDS #
-    ###################
-
-
-class BuildingShellSubsectorToSector(Linkage):
-    ####################
-    # CLASS ATTRIBUTES #
-    ####################
-
-    _class_descriptor = "building shell subsectors → sectors"
-    _component_type_from = "building_shell_subsectors"
-    _component_type_to = "sectors"
-
-
-class EnergyDemandSubsectorToFinalFuel(Linkage):
-    """
-    Defines the linkage betweeen energy demand subsectors and final fuels. It is used to define the assumed growth
-    of fuel demands within a subsector and the extent and cost of efficiency by fuel within a subsector. Note efficiency
-    is applied after fuel conversions.
-    """
-
-    ####################
-    # CLASS ATTRIBUTES #
-    ####################
-
-    _class_descriptor = "energy demand subsectors → final fuels"
-    _component_type_from = "energy_demand_subsectors"
-    _component_type_to = "final_fuels"
-    _attribute_file = "energy_demand_subsectors_to_final_fuels.csv"
-
-    ###################
-    # INSTANCE FIELDS #
-    ###################
-
-    default_energy_demand_trajectory: typing.Optional[ts.NumericTimeseries] = pydantic.Field(
+    out_energy_demand: Optional[ts.NumericTimeseries] = pydantic.Field(
+        default=ts.NumericTimeseries(
+            name="out_energy_demand",
+            data=pd.Series(
+                {pd.to_datetime("1/1/1900"): np.nan},
+            ),
+        ),
         default_freq="YS",
         up_method="interpolate",
-        down_method="annual",
-        units=get_units("default_energy_demand_trajectory"),
-    )
-    efficiency_fraction: typing.Optional[ts.FractionalTimeseries] = pydantic.Field(
-        default_freq="YS", up_method="interpolate", down_method="annual", units=get_units("efficiency_fraction")
-    )
-    efficiency_cost: typing.Optional[ts.NumericTimeseries] = pydantic.Field(
-        default_freq="YS", up_method="interpolate", down_method="annual", units=get_units("efficiency_cost")
-    )
-
-    # attributes that will be set during stock rollover calculations
-    out_final_energy_demand: typing.Optional[ts.NumericTimeseries] = pydantic.Field(
-        default_freq="YS", up_method="interpolate", down_method="annual", units=get_units("out_final_energy_demand")
-    )
-    out_efficiency_cost: typing.Optional[ts.NumericTimeseries] = pydantic.Field(
-        default_freq="YS", up_method="interpolate", down_method="annual", units=get_units("out_efficiency_cost")
+        down_method="first",
+        weather_year=True,
     )
 
 
-class NonEnergySubsectorToPollutant(Linkage):
-    """
-    Defines the linkage betweeen non energy subsectors and pollutants.
-    """
-
+class CandidateFuelToFinalFuel(XToFinalFuel):
     ####################
     # CLASS ATTRIBUTES #
     ####################
-
-    _class_descriptor = "non-energy subsectors → pollutants"
-    _component_type_from = "non_energy_subsectors"
-    _component_type_to = "pollutants"
-    _attribute_file = "non_energy_subsectors_to_pollutants.csv"
+    _RELATIONSHIP_TYPE = LinkageRelationshipType.ONE_TO_ONE
+    _class_descriptor = "candidate fuels → final fuels"
+    _component_type_from = "candidate_fuels"
+    _component_type_to = "final_fuels"
+    _attribute_file = "candidate_fuels_to_final_fuels.csv"
 
     ###################
     # INSTANCE FIELDS #
     ###################
-
-    emissions: ts.NumericTimeseries = pydantic.Field(
-        default_freq="YS", up_method="interpolate", down_method="annual", units=get_units("emissions")
-    )
-    cost: Optional[ts.NumericTimeseries] = pydantic.Field(
-        None, default_freq="YS", up_method="interpolate", down_method="annual", units=get_units("cost")
+    blend_limit_fraction: Optional[ts.NumericTimeseries] = pydantic.Field(
+        default_freq="YS", up_method="interpolate", down_method="annual", weather_year=False
     )
 
+    ######################
+    # Calculated Outputs #
+    ######################
+    out_fuel_cost: Optional[ts.NumericTimeseries] = pydantic.Field(
+        default=ts.NumericTimeseries(
+            name="out_fuel_cost",
+            data=pd.Series(
+                {pd.to_datetime("1/1/1900"): np.nan},
+            ),
+            up_method="ffill",
+            down_method="annual",
+        ),
+        default_freq="YS",
+        up_method="interpolate",
+        down_method="first",
+        weather_year=True,
+    )
 
-class NegativeEmissionsTechnologyToPollutant(Linkage):
-    """Defines the linkage between NETs and pollutants."""
+    out_net_emissions: Optional[ts.NumericTimeseries] = pydantic.Field(
+        default=ts.NumericTimeseries(name="out_net_emissions", data=pd.Series({pd.to_datetime("1/1/1900"): np.nan})),
+        up_method="ffill",
+        down_method="annual",
+        default_freq="YS",
+        weather_year=True,
+    )
 
-    ####################
-    # CLASS ATTRIBUTES #
-    ####################
+    out_gross_emissions: Optional[ts.NumericTimeseries] = pydantic.Field(
+        default=ts.NumericTimeseries(name="out_gross_emissions", data=pd.Series({pd.to_datetime("1/1/1900"): np.nan})),
+        up_method="ffill",
+        down_method="annual",
+        default_freq="YS",
+        weather_year=True,
+    )
 
-    _class_descriptor = "negative emissions technologies → pollutants"
-    _component_type_from = "negative_emissions_technologies"
-    _component_type_to = "pollutants"
+    out_upstream_emissions: Optional[ts.NumericTimeseries] = pydantic.Field(
+        default=ts.NumericTimeseries(
+            name="out_upstream_emissions", data=pd.Series({pd.to_datetime("1/1/1900"): np.nan})
+        ),
+        up_method="ffill",
+        down_method="annual",
+        default_freq="YS",
+        weather_year=True,
+    )
 
 
 class ResourceToPollutant(Linkage):
@@ -1179,6 +1171,8 @@ class ResourceToPollutant(Linkage):
     Defines the linkage between resources and pollutants. Used if emission factors are set on the resource to
     pollutant level rather than the resource to fuel to pollutant level.
     """
+
+    _RELATIONSHIP_TYPE = LinkageRelationshipType.MANY_TO_MANY
 
     ####################
     # CLASS ATTRIBUTES #
@@ -1199,6 +1193,8 @@ class TransmissionPathToPollutant(Linkage):
     Defines the linkage between transmission paths and pollutants. Used to set emission factors for Tx lines.
     """
 
+    _RELATIONSHIP_TYPE = LinkageRelationshipType.MANY_TO_MANY
+
     ####################
     # CLASS ATTRIBUTES #
     ####################
@@ -1214,224 +1210,3 @@ class TransmissionPathToPollutant(Linkage):
     reverse_dir_multiplier: ts.NumericTimeseries = pydantic.Field(
         None, default_freq="YS", up_method="interpolate", down_method="annual", units=get_units
     )
-
-
-class DeviceToLoad(Linkage):
-    """
-    Defines the mapping from a device to a load component. Used to populate load component annual energy with
-    outputs of stock rollover.
-    """
-
-    ####################
-    # CLASS ATTRIBUTES #
-    ####################
-
-    _class_descriptor = "devices → loads"
-    _component_type_from = "devices"
-    _component_type_to = "loads"
-    _attribute_file = "devices_to_loads.csv"
-
-    ###################
-    # INSTANCE FIELDS #
-    ###################
-
-    # The multiplier is what energy demands from devices are multiplied by to add to the annual_energy_forecast in the
-    # linked load component, if applicable. Used for unit conversion. Default value is conversion from MMBTU to MWh.
-    multiplier: float = 0.293071
-
-
-class EnergyDemandSubsectorToLoad(Linkage):
-    """
-    Defines the mapping from a energy demand subsector to a load component. Used to populate load component
-    annual energy with outputs of energy demand calculations.
-    """
-
-    ####################
-    # CLASS ATTRIBUTES #
-    ####################
-
-    _class_descriptor = "energy_demand_subsectors → loads"
-    _component_type_from = "energy_demand_subsectors"
-    _component_type_to = "loads"
-    _attribute_file = "energy_demand_subsectors_to_loads.csv"
-
-    ###################
-    # INSTANCE FIELDS #
-    ###################
-
-    # The multiplier is what energy demands from energy demand subsectors are multiplied by to add to the
-    # annual_energy_forecast in the linked load component, if applicable. Used for unit conversion.
-    # Default value is conversion from MMBTU to MWh.
-    multiplier: float = 0.293071
-
-
-class StockRolloverSubsectorToZone(Linkage):
-    ####################
-    # CLASS ATTRIBUTES #
-    ####################
-
-    _class_descriptor = "stock rollover subsectors → zones"
-    _component_type_from = "stock_rollover_subsectors"
-    _component_type_to = "zones"
-
-
-class EnergyDemandSubsectorToZone(Linkage):
-    ####################
-    # CLASS ATTRIBUTES #
-    ####################
-
-    _class_descriptor = "energy demand subsectors → zones"
-    _component_type_from = "energy_demand_subsectors"
-    _component_type_to = "zones"
-
-
-class NonEnergySubsectorToZone(Linkage):
-    ####################
-    # CLASS ATTRIBUTES #
-    ####################
-
-    _class_descriptor = "non-energy subsectors → zones"
-    _component_type_from = "non_energy_subsectors"
-    _component_type_to = "zones"
-
-
-class StockRolloverSubsectorToSector(Linkage):
-    ####################
-    # CLASS ATTRIBUTES #
-    ####################
-
-    _class_descriptor = "stock rollover subsectors → sectors"
-    _component_type_from = "stock_rollover_subsectors"
-    _component_type_to = "sectors"
-
-
-class EnergyDemandSubsectorToSector(Linkage):
-    ####################
-    # CLASS ATTRIBUTES #
-    ####################
-
-    _class_descriptor = "energy demand subsectors → sectors"
-    _component_type_from = "energy_demand_subsectors"
-    _component_type_to = "sectors"
-
-
-class NonEnergySubsectorToSector(Linkage):
-    ####################
-    # CLASS ATTRIBUTES #
-    ####################
-
-    _class_descriptor = "non-energy subsectors → sectors"
-    _component_type_from = "non_energy_subsectors"
-    _component_type_to = "sectors"
-
-
-class CCSPlantToFinalFuel(Linkage):
-    ####################
-    # CLASS ATTRIBUTES #
-    ####################
-
-    _class_descriptor = "ccs_plants → final_fuels"
-    _component_type_from = "ccs_plants"
-    _component_type_to = "final_fuels"
-    _attribute_file = "ccs_plants_to_final_fuels.csv"
-
-    ###################
-    # INSTANCE FIELDS #
-    ###################
-
-    ccs_energy_demand: typing.Optional[ts.NumericTimeseries] = pydantic.Field(
-        default_freq="YS",
-        up_method="interpolate",
-        down_method="annual",
-        description="Energy demand required to run CCS (in units of MMBtu per metric ton)",
-    )
-
-    # attributes that will be set during calculations
-    out_final_energy_demand: typing.Optional[ts.NumericTimeseries] = pydantic.Field(
-        default_freq="YS", up_method="interpolate", down_method="annual", units=get_units("out_final_energy_demand")
-    )
-
-
-class NegativeEmissionsTechnologyToFinalFuel(Linkage):
-    ####################
-    # CLASS ATTRIBUTES #
-    ####################
-
-    _class_descriptor = "negative_emissions_technologies → final_fuels"
-    _component_type_from = "negative_emissions_technologies"
-    _component_type_to = "final_fuels"
-    _attribute_file = "negative_emissions_technologies_to_final_fuels.csv"
-
-    ###################
-    # INSTANCE FIELDS #
-    ###################
-
-    energy_demand: typing.Optional[ts.NumericTimeseries] = pydantic.Field(
-        default_freq="YS",
-        up_method="interpolate",
-        down_method="annual",
-        description="Energy demand required to run NET (in units of MMBtu per metric ton)",
-    )
-
-    # attributes that will be set during calculations
-    out_final_energy_demand: typing.Optional[ts.NumericTimeseries] = pydantic.Field(
-        default_freq="YS", up_method="interpolate", down_method="annual", units=get_units("out_final_energy_demand")
-    )
-
-
-class CCSPlantToPollutant(Linkage):
-    ####################
-    # CLASS ATTRIBUTES #
-    ####################
-
-    _class_descriptor = "ccs_plants → pollutants"
-    _component_type_from = "ccs_plants"
-    _component_type_to = "pollutants"
-
-
-class NonEnergySubsectorToCCSPlant(Linkage):
-    ####################
-    # CLASS ATTRIBUTES #
-    ####################
-
-    _class_descriptor = "non_energy_subsectors → ccs_plants"
-    _component_type_from = "non_energy_subsectors"
-    _component_type_to = "ccs_plants"
-    _attribute_file = "non_energy_subsectors_to_ccs_plants.csv"
-
-    ###################
-    # INSTANCE FIELDS #
-    ###################
-
-    ccs_application_percentage: typing.Optional[ts.FractionalTimeseries] = pydantic.Field(
-        None,
-        default_freq="YS",
-        up_method="interpolate",
-        down_method="annual",
-        description="percentage of gross emissions to capture",
-    )
-
-
-class NonEnergySubsectorToEnergyDemandSubsector(Linkage):
-    ####################
-    # CLASS ATTRIBUTES #
-    ####################
-
-    _class_descriptor = "non_energy_subsectors → energy_demand_subsectors"
-    _component_type_from = "non_energy_subsectors"
-    _component_type_to = "energy_demand_subsectors"
-    _attribute_file = "non_energy_subsectors_to_energy_demand_subsectors.csv"
-
-
-if __name__ == "__main__":
-    from new_modeling_toolkit.core import dir_str, energy_demand_subsector, fuel
-
-    energy_demand_subsectors = energy_demand_subsector.EnergyDemandSubsector.from_dir(
-        dir_str.data_interim_dir / "energy_demand_subsectors"
-    )
-    fuels = fuel.FinalFuel.from_dir(dir_str.data_interim_dir / "final_fuels")
-
-    eds = energy_demand_subsectors["CA_Industry_Agriculture"]
-    f = fuels["Diesel"]
-
-    linkage = EnergyDemandSubsectorToFinalFuel(name="test linkage", _instance_from=eds, _instance_to=f)
