@@ -1,0 +1,200 @@
+name: Template.xlsm
+template_path: ../../E3 Model Template.xlsm
+modeled_years_visible: [2024, 2025, 2026, 2028, 2030, 2032, 2033, 2034, 2035, 2039, 2040, 2045]
+sheets:
+#  - name: Load Components
+#    title: Load Components
+#    sections:
+#      - name: Loads
+#        components:
+#          - name: system.Load
+#            linkages_to_write:
+#              - name: AllToPolicy
+#                instances:
+#                  - RPS
+#                  - SB 100 & 1020
+#  - name: Baseline Resources
+#    title: Default Baseline
+#    sections:
+#      - name: Resources
+#        components:
+#          - name: system.electric.resources.ElectricResource
+#            num_rows: 200
+#            linkages_to_write:
+#              - name: EmissionsContribution
+#                instances:
+#                  - Cap-and-Trade
+#                  - GHG Target
+#              - name: ReliabilityContribution
+#                instances:
+#                  - MTR
+#                  - MTR LLT LDES
+#                  - MTR LLT Firm
+#                  - System RA
+#              - name: AssetToELCC
+#                instances:
+#                  - Solar-Storage Surface
+#                  - In-State Wind Curve
+#                  - Out-of-State Wind Curve
+#                  - Offshore Wind Curve
+#              - name: AnnualEnergyStandardContribution
+#                instances:
+#                  - RPS
+#                  - SB 100 & 1020
+#              - name: ResourceToReserve
+#                instances:
+#                  - Downward LF
+#                  - Downward Reg
+#                  - Frequency Response
+#                  - Spin
+#                  - Upward LF
+#                  - Upward Reg
+#              - name: AssetToAssetGroup
+#                instances:
+#                  - Build Results Group
+#                  - Dispatch Results Group
+#                  - Cost Results Group
+#            exclude:
+#              - hourly_energy_policies
+#              - resource_groups
+#              - asset_groups
+#              - max_annual_calls
+#              - max_monthly_calls
+#              - max_daily_calls
+#              - max_call_duration
+#              - adjacency
+#              - shift_direction
+#              - aggregate_operations
+#              - initial_committed_units
+#              - energy_budget_annual
+#              - energy_budget_monthly
+#              - ramp_rate_2_hour
+#              - ramp_rate_3_hour
+#              - ramp_rate_4_hour
+#              - variable_cost_power_input
+#              # Reliability inputs
+#              - stochastic_outage_rate
+#              - mean_time_to_repair
+#              - random_seed
+#              - outage_distributions
+#              # Integer build inputs
+#              - integer_build_increment
+#              # Baseline resources don't need these
+#              - annualized_capital_cost
+#              - annualized_storage_capital_cost
+#              - annualized_storage_fixed_om_cost
+#              - build_year
+#              - can_build_new
+#              - cumulative_potential
+#              - financial_lifetime
+#              - min_cumulative_new_build
+#              - min_operational_capacity
+#              - physical_lifetime
+#              - planned_capacity
+#              - potential
+#              - production_tax_credit
+#              # Assume storage duration is fixed, so we don't need these
+#              - annualized_storage_capital_cost
+#              - annualized_storage_fixed_om_cost
+#              - duration_constraint
+#  - name: Candidate Resources
+#    title: Default Candidates
+#    sections:
+#      - name: Resources
+#        components:
+#          - name: system.electric.resources.ElectricResource
+#            num_rows: 200
+#            linkages_to_write:
+#              - name: EmissionsContribution
+#                instances:
+#                  - Cap-and-Trade
+#                  - GHG Target
+#              - name: ReliabilityContribution
+#                instances:
+#                  - MTR
+#                  - MTR LLT LDES
+#                  - MTR LLT Firm
+#                  - System RA
+#              - name: AssetToELCC
+#                instances:
+#                  - Solar-Storage
+#                  - In-State Wind
+#                  - Out-of-State Wind
+#                  - Offshore Wind
+#              - name: AnnualEnergyStandardContribution
+#                instances:
+#                  - RPS
+#                  - SB 100 & 1020
+#              - name: ResourceToReserve
+#                instances:
+#                  - Downward LF
+#                  - Downward Reg
+#                  - Frequency Response
+#                  - Spin
+#                  - Upward LF
+#                  - Upward Reg
+#              - name: AssetToAssetGroup
+#                instances:
+#                  - Operational Group
+#                  - Resource Potential Group
+#                  - Build Results Group
+#                  - Dispatch Results Group
+#                  - Cost Results Group
+#            exclude:
+#              - hourly_energy_policies
+#              - resource_groups
+#              - asset_groups
+#              - energy_budget_annual
+#              - energy_budget_monthly
+#              - energy_budget_daily
+#              - max_annual_calls
+#              - max_monthly_calls
+#              - max_daily_calls
+#              - max_call_duration
+#              - adjacency
+#              - shift_direction
+#              - initial_committed_units
+#              - ramp_rate_2_hour
+#              - ramp_rate_3_hour
+#              - ramp_rate_4_hour
+#              - variable_cost_power_input
+#              # Reliability inputs
+#              - stochastic_outage_rate
+#              - mean_time_to_repair
+#              - random_seed
+#              - outage_distributions
+#              # Integer build inputs
+#              - integer_build_increment
+#              # Assume storage duration is fixed, so we don't need these
+#              - annualized_storage_capital_cost
+#              - annualized_storage_fixed_om_cost
+#              - duration_constraint
+#  - name: Resource Groups
+#    title: Resource Groups
+#    sections:
+#      - name: Resource Groups
+#        components:
+#          - name: system.electric.resources.ElectricResourceGroup
+#            include:
+#              - aggregate_operations
+#              - cumulative_potential
+#              - min_cumulative_new_build
+#              - min_operational_capacity
+#
+#          - name: core.three_way_linkage.CustomConstraintLinkage
+#          - name: core.custom_constraint.CustomConstraintRHS
+#          - name: core.custom_constraint.CustomConstraintLHS
+  - name: Zonal Topology
+    title: Zones & Transmission Paths
+    sections:
+#      - name: Zones
+#        components:
+#          - name: system.electric.zone.Zone
+      - name: Transmission Paths
+        components:
+          - name: system.electric.tx_path.TxPath
+            linkages_to_write:
+              - name: EmissionsContribution
+                instances:
+                  - Cap-and-Trade
+                  - GHG Planning Target
