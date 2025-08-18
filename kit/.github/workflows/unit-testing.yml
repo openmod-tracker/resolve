@@ -1,0 +1,30 @@
+name: Run Unit Tests
+
+on:
+  workflow_call:
+  pull_request:
+    paths:
+      - 'new_modeling_toolkit/**'
+      - 'pyproject.toml'
+      - '.github/workflows/**'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest-4core
+    container: continuumio/miniconda3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create NMT environment (Miniconda)
+        run: |
+          conda env create -q -f environment-ci.yml
+
+      - name: Run pytest
+        run: |
+          conda run -n kit-ci --no-capture-output pytest -n logical tests/

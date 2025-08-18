@@ -1,0 +1,97 @@
+name: Sync to Public Repo
+# This workflow file creates a "release" version of RESOLVE. It removes directories that are related
+# to internal development, and then pushes the changes to the public RESOLVE repository.
+
+on:
+  workflow_dispatch: # Run when manually triggered
+    inputs:
+      dry-run:
+        description: 'Run in dry-run mode (no push or PR)?'
+        required: false
+        default: false
+        type: boolean
+      test-repo: # This is only used when developing/testing this workflow.
+        description: 'Repository to test deploying. (include "git@...")'
+        required: false
+        type: string
+
+jobs:
+  sync-public:
+    runs-on: ubuntu-latest
+
+    env:
+      PUBLIC_REPO: git@github.com:e3-/resolve.git
+      PUBLIC_REPO_NAME: resolve
+      PR_BRANCH: sync-release-${{ github.run_id }}
+      REMOVE_PATHS: |
+        .devcontainer/
+        .dvc/
+        .github/
+        data-test/
+        docker/
+        reports-test/
+        tests/resolve/
+        tests/core/
+      IS_DRY_RUN: ${{ github.event.inputs.dry-run }}
+      TEST_REPO: ${{ github.event.inputs.test-repo }}
+
+    steps:
+    - name: Checkout private repo
+      uses: actions/checkout@v4
+      with:
+        # Change to 0 if we want git log or commit history for the PR comments when pushing to public
+        fetch-depth: 1
+
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+      # TODO: if we want to keep using the `test-repo` param, we should parameterize this as well:
+        ssh-private-key: ${{ secrets.PUBLIC_REPO_DEPLOY_KEY }}
+
+    - name: Determine target repo
+      id: target-repo
+      run: |
+        if [ -z "${TEST_REPO}" ]; then
+          echo "repo=${PUBLIC_REPO}" >> $GITHUB_OUTPUT
+        else
+          echo "repo=${TEST_REPO}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Clone public repo
+      env:
+        TARGET_REPO: ${{ steps.target-repo.outputs.repo }}
+      run: |
+        # This step is just on the `resolve` repo:
+        git clone --branch main --single-branch --depth=1 "${TARGET_REPO}" ../"${PUBLIC_REPO_NAME}"
+        cd ../"${PUBLIC_REPO_NAME}"
+        git checkout -b "$PR_BRANCH" || git checkout -b "$PR_BRANCH" origin/main
+
+    - name: Update public repo
+      run: |
+        # Copy from kit repo to resolve repo here
+        rsync -av --delete --exclude ".git" --exclude "${PUBLIC_REPO_NAME}" "${GITHUB_WORKSPACE}" ../"${PUBLIC_REPO_NAME}"/
+        cd ../"${PUBLIC_REPO_NAME}"
+        echo "$REMOVE_PATHS" | while read path; do
+          if [ -n "$path" ]; then
+            echo "Removing $path"
+            rm -rf "$path"
+          fi
+        done
+
+    - name: Show git diff (dry-run)
+      if: env.IS_DRY_RUN == 'true'
+      run: |
+        cd ../"${PUBLIC_REPO_NAME}"
+        git diff --stat
+        echo "::notice title=Dry Run::Skipping push and PR creation."
+
+    - name: Push changes to public repo
+      if: env.IS_DRY_RUN != 'true'
+      run: |
+        cd ../"${PUBLIC_REPO_NAME}"
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add .
+        git commit -m "Release: sync changes (squashed)" || echo "No changes to commit"
+        git push origin "$PR_BRANCH"
+      # echo "Create PR here: https://github.com/e3-/resolve/compare/main...$PR_BRANCH?expand=1"

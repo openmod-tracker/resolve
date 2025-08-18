@@ -1,0 +1,26 @@
+name: Build Dev Environment
+
+on:
+  workflow_call:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'pyproject.toml'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-dev-environment:
+    runs-on: ubuntu-latest
+    container: continuumio/miniconda3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create NMT Dev environment (Miniconda)
+        run: |
+          conda env create -f environment-dev.yml
