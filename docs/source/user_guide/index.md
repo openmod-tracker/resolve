@@ -4,7 +4,6 @@
 :hidden:
 
 scenario_tool
-temporal_settings
 financial_settings
 case_settings
 general_ST_tips
