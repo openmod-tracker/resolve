@@ -4,10 +4,10 @@
 :hidden:
 
 scenario_tool
-creating_inputs
-creating_system
-creating_settings
-comparing_inputs
+temporal_settings
+financial_settings
+case_settings
+general_ST_tips
 ```
 
 (saving-inputs)=

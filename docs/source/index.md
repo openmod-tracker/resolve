@@ -23,7 +23,7 @@ More detailed information along with relevant projects and reports that have lea
 
 ![resolve-baseball-card.png](_images/resolve-baseball-card.svg)
 
-`RESOLVE` wwas initially developed in 2014 to assess the investment needs of systems seeking to integrate large quantities of variable renewable resources. Since then, many new modeling features and developments are done to enhance the modeling capabilities. The latest version is RESOLVE 3.0, released in summer 2025.
+`RESOLVE` was initially developed in 2014 to assess the investment needs of systems seeking to integrate large quantities of variable renewable resources. Since then, many new modeling features and developments are done to enhance the modeling capabilities. The latest version is RESOLVE 3.0, released in summer 2025.
 
 
 ## `RESOLVE` Data Flow
