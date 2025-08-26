@@ -11,7 +11,7 @@ of 2045-2064, assuming that the 2045 costs are representative of a steady-state 
 4. **Annual discount rate:** Real discount rate in each year
 
 
-![Example of RESOLVE Modeling Years and Financing Timeline](_images/RESOLVE_Model_Years.jpeg)
+![Example of RESOLVE Modeling Years and Financing Timeline](_images/Modeling_Year.jpg)
 
 ## Temporal Settings
 
