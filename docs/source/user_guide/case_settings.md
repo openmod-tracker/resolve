@@ -63,7 +63,7 @@ Users who want to run pre-existing cases can save all necessary inputs from the 
 |--------------------------------------------------------------------|--------------------------------------------------------------------|
 | | |
 
-RESOLVE Case Setup Macros
+Data is saved from RESOLVE Scenario Tool via the macros in the RESOLVE Case Setup worksheet.
 
 1.  Save the System Data via the Export System Data to CSV macro button. This will take about 20 minutes for all the data in all tabs to be saved in the “data” folder. Running this macro is needed everything data updates are introduced to the Scenario Tool.
 
