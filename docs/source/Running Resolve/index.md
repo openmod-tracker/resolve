@@ -52,5 +52,6 @@ If for the installation process, you had used Pycharm or any other platforms, th
 
 
 
-### Note
-Hint: If you’re in your command line and unsure what arguments to pass to `run_opt.py`, use the command `python run_opt.py --help` to get help!
+```{Note}
+If you’re in your command line and unsure what arguments to pass to `run_opt.py`, use the command `python run_opt.py --help` to get help!
+```
