@@ -1,8 +1,8 @@
-# RESOLVE Scenario Tool
+## RESOLVE Scenario Tool
 
 The RESOLVE Scenario Tool is a user-centric model interface, designed to link data, inputs, assumptions, and constraints with the RESOLVE code. The primary step in being able to make that linkage is making sure that xlwings is correctly set-up.
 
-## Overview of Data Flow to RESOLVE Model
+### Overview of Data Flow to RESOLVE Model
 
 The main data are organized in RESOLVE upstream workbooks, most importantly, the baseline, load and candidate resource workbooks that also have duplicates of the RESOLVE template tables for easy data transfer to the RESOLVE model. These workbooks are made available if CPUC desires, but the users should not need to interact and can directly rely on Scenario Tool for reviewing or using the data.
 
@@ -10,7 +10,7 @@ The main data are organized in RESOLVE upstream workbooks, most importantly, the
 
 Illustration of data flow from upstream workbooks to RESOLVE Scenario Tool
 
-## Structure & Tabs of the Scenario Tool
+### Structure & Tabs of the Scenario Tool
 
 All CPUC RESOLVE Scenario Tools have the following main worksheets.
 

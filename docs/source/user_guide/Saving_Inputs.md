@@ -1,6 +1,6 @@
 ## Saving Input Data & Case Settings
 
-Users who want to run pre-existing cases can save all necessary inputs from the “RESOLVE Case Setup” tab of the Scenario Tool. There are three main macros to interact with for setting up a new case or running RESOLVE.
+Users who want to run pre-existing cases can save all necessary inputs from the “RESOLVE Case Setup” tab of the Scenario Tool.
 
 | ![RESOLVE Case Setup Macros](_images/256b1eb8c9c542258520545f2e529cbd.png) | ![RESOLVE Case Setup Macros](_images/fa539a0c4687d0970c68b3227fef4bb1.png) |
 |--------------------------------------------------------------------|--------------------------------------------------------------------|

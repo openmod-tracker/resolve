@@ -1,4 +1,3 @@
-
 ## Configuring Xlwings in Scenario Tool
 
 The RESOLVE Scenario Tool is a user-centric model interface, designed to link data, inputs, assumptions, and constraints with the RESOLVE code. The primary step in being able to make that linkage is making sure that xlwings is correctly set up.
