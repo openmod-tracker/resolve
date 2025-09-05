@@ -1,6 +1,6 @@
 # Running RESOLVE
 
-After saving your input data & case settings (refer below to see how this should look like) (as described in [Saving Input Data & Case Settings](https://docs.ethree.com/projects/resolve/en/latest/user_guide/index.html#saving-inputs)), you are now ready to run RESOLVE. Here is the file directory structure with the main folders that you interact with when running a RESOLVE case. The “data” folder then holds all input data such that:
+First step in running RESOLVE is saving data. After saving your input data & case settings (refer below to see how this should look like) (as described in [Saving Input Data & Case Settings](https://docs.ethree.com/projects/resolve/en/latest/user_guide/index.html#saving-inputs)), you are now ready to run RESOLVE. Here is the file directory structure with the main folders that you interact with when running a RESOLVE case. The “data” folder then holds all input data such that:
 
 The subfolders in the "data" folder include:
 
