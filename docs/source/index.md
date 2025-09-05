@@ -54,7 +54,7 @@ understand and walk through the steps of running `RESOLVE` and plan clean and re
 
 getting_started/index
 Initial Model Set-Up/index
-User Guide <user_guide/index>
+User Guide user_guide/index
 2025 CPUC IRP Files/index
 Running Resolve/index
 RESOLVE Results Viewing/index
@@ -71,14 +71,6 @@ FAQs/index
 2024-2026 IRP Cycle <https://www.cpuc.ca.gov/industries-and-topics/electrical-energy/electric-power-procurement/long-term-procurement-planning/2024-26-irp-cycle-events-and-materials>
 :::
 
-:::{toctree}
-:caption: CEC EPC-19-056 Links
-:hidden:
-
-CEC Project Page <https://www.energizeinnovation.fund/projects/assessing-long-duration-energy-storage-deployment-scenarios-meet-californias-energy-goals>
-E3 Modeling Dataset <https://zenodo.org/doi/10.5281/zenodo.10866454>
-Form Energy Dataset <https://zenodo.org/doi/10.5281/zenodo.8045595>
-:::
 
 :::{toctree}
 :caption: E3 Links
