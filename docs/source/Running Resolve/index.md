@@ -1,8 +1,6 @@
-# Running RESOLVE
+# RESOLVE Data Folders
 
-First step in running RESOLVE is saving data. After saving your input data & case settings (refer below to see how this should look like) (as described in [Saving Input Data & Case Settings](https://docs.ethree.com/projects/resolve/en/latest/user_guide/index.html#saving-inputs)), you are now ready to run RESOLVE. Here is the file directory structure with the main folders that you interact with when running a RESOLVE case. The “data” folder then holds all input data such that:
-
-The subfolders in the "data" folder include:
+Now that you have saved the data from Scenario Tool, you will have an updated data folder ready to run new cases with. As a reference, here is the file directory structure with the main folders that you interact with when running a RESOLVE case. The subfolders in the "data" folder include:
 
 | Folder name | Description   |
 |---------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -11,7 +9,7 @@ The subfolders in the "data" folder include:
 | processed                                         | Includes re-scaled profiles from RESOLVE which gets created the first time running a RESOLVE case with all profiles and sample days.                                                                                                                                                             |
 | settings                                          | Includes sample days in the “timeseries” subfolder and all case definitions in the “resolve” subfolder. The subfolder of “temporal_settings” is where modeling years and other temporal settings get saved.                                                                                      |
 
-Similarly, the subfolders in the “results” folder include:
+Running a RESOLVE case also requires interactions ith the subfolders in the “results” folder:
 
 | Folder name | Description |
 |-------------|-------------|
