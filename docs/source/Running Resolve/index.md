@@ -1,4 +1,4 @@
-# RESOLVE Data Folders
+# Running RESOLVE
 
 Now that you have saved the data from Scenario Tool, you will have an updated data folder ready to run new cases with. As a reference, here is the file directory structure with the main folders that you interact with when running a RESOLVE case. The subfolders in the "data" folder include:
 
@@ -19,7 +19,7 @@ A schematic of the data folders is shown below:
 ![RESOLVE Data Folder Structure](_images/New_Data_Folders.png)
 
 
-## Running RESOLVE from the Command Line
+## Command Line to Start a Case Run
 If you plan to run Resolve via a command line/terminal, use the following instructions. Running Resolve via the command line gives you more options for how the model is run than are exposed in the Scenario Tool, as discussed below.
 
 1. In a command line (e.g., Command Prompt), navigate into the ./new_modeling_toolkit/resolve directory
