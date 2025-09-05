@@ -54,7 +54,7 @@ understand and walk through the steps of running `RESOLVE` and plan clean and re
 
 getting_started/index
 Initial Model Set-Up/index
-User Guide user_guide/index
+User Guide <user_guide/index>
 2025 CPUC IRP Files/index
 Running Resolve/index
 RESOLVE Results Viewing/index
