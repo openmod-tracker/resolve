@@ -36,34 +36,14 @@ In order to model inter-day sharing for storage to shift energy between days in 
 
 ### Temporal Settings
 In Resolve Case Setup worksheet, you have the option to choose a set of representative day scenario (if more than one available) to include in your case run. Additionally, you can choose the years to model in RESOLVE, years to model with inter-day sharing. 
-In order to include inter-day sharing, you need to choose "inter-period sharing" for dispatch window behavior; otherwise, choose "loopback" to exclude inter-day sharing. Additionally, choose the years that you wish to include inter-day sharing for. And lastly, choose a single weather year from the weather years list (all years have the same chronological mapping with representative days, so any single weather year can be chosen in this case).
+
+In order to include inter-day sharing, you need to choose "inter-period sharing" for dispatch window behavior; otherwise, choose "loopback" to exclude inter-day sharing. Additionally, choose the years that you wish to include inter-day sharing for. And lastly, choose a single weather year from the weather years list from the last table in RESOLVE Case Setup worksheet (all years have the same chronological mapping with representative days, so any single weather year can be chosen in this case).
 
 ![Scenario Tool Timeseries Clusters Worksheet](_images/Temporal_Settings.png)
 
 ### Scenario tagging functionality
 
-See {ref}`input_scenarios` for discussion about how to determine which scenario tagged data is used in a specific model run. 
 
-On most of the component & linkage attributes tabs, you will find a `Scenario` column. In the Scenario Tool, a single instance of 
-a component can have **multiple** line entries in the corresponding data table as long as each line is tagged with a different scenario 
-tag, as shown in the below screenshot. 
 
-```{image} ../_images/resource-scenario-tags.png
-:alt: Screenshot from Scenario Tool showing multiple scenario tags for the same resource.
-:align: center
-```
-
-Scenario tags can be populated *sparsely*; in other words, every line entry for the same resource does not have to be fully populated 
-across all columns in the data tables. In the example screenshot above, this is demonstrated by the `base` scenario tag having 
-data for "Total (Planned + New) Resource Potential in Modeled Year (MW)" and no data for "All-In Fixed Cost by Vintage ($/kW-year)", 
-whereas the scenario tags `2021_PSP_22_23_TPP` and `2021_PSP_22_23_TPP_High` are the reverse. 
-
-The Scenario Tool will automatically create CSVs for all the data entered into the Scenario Tool. These CSVs have a 
-four-column, "long" orientation.
-
-| timestamp                            | attribute        | value   | scenario (optional) |
-|--------------------------------------|------------------|---------|---------------------|
-| [None or timestamp (hour beginning)] | [attribute name] | [value] | [scenario name]     |
-| ...                                  | ...              | ...     | ...                 |
 
 

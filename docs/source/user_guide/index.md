@@ -3,7 +3,8 @@
 :hidden:
 
 scenario_tool
-financial_settings
-case_settings
+xlwings_setting
+settings
+Saving_Inputs
 general_ST_tips
 ```
