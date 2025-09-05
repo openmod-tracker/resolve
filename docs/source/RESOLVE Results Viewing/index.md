@@ -43,6 +43,9 @@ The hourly results viewer notebook provides a workflow for analyzing and visuali
 ![Options to set for dispatch chart view](_images/f72f141262d258148e732e0ffe021e6d.png)
 ![Example Dispatch Chart](_images/923796f9979f67abf68108bf8a1bf5c5.png)
 
-For hourly dispatch charts, the resource aggregation and color coding is defined in the Excel Results Viewer workbook.
+For hourly dispatch charts, the resource aggregation and color coding is defined in the Excel Results Viewer workbook as a name range. The colors are set to match the annual results charts shown in the Excel Results Viewer workbook.
 
 ![Colors and build group setup in Results Viewer](_images/a9e5f769410f85539fc45c298935ad71.png)
+
+The resource grouping that is used for hourly results aggregation is also defined in the Excel Results Viewer workbook, as a name range. An example of that is provided below:
+![Hourly Results Grouping](_images/Houlry_Res_Grouping.png)
