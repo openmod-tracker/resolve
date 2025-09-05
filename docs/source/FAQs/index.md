@@ -99,17 +99,6 @@
 
     You can add normalized or scaled profiles as input to the model. In the Scenario Tool, relevant profile paths should be added for the component of interest. Additionally, the csv file associated with the profile must be copied to the data folder directory inside “profiles” folder and within the appropriate subfolder that matches with the file path inserted in the Scenario Tool. Note that to make sure RESOLVE scales renewable production to the average capacity factor across the entire timeseries of the provided profile to make sure annual generation matches with historical average and not is not skewed by sample days. For loads, you have the option to scale the load profile by energy and or peak (we often scale it by energy only). Please note that, if you are adding a new profile, make sure to use a new name so that it triggers the profile re-scaling code appropriately.
 
-18. **What is a Data Scenario Tag?**
-
-    A Data Scenario Tag is a tag that you may use to refer to one or a group of components when setting up a new scenario. These user-defined tags are a way to make case setup more intuitive and to provide flexibility around grouping data across multiple tabs when relevant. For example, you may use one data scenario tag for all California load components that are driven from IEPR of a specific vintage. You can also use the same scenario tag if you like for Customer_PV resources in the Baseline workbook. It is also notable that “Base” refers to default assumptions that typically are included in all case runs and are not expected to change across cases. When setting up your case on the RESOLVE Case Setup tab, you can select which Scenario Tags are used in the case with the Data Scenarios table (see next FAQ).
-
-19. **How is a RESOLVE case defined with Scenario Tags?**
-
-    Each case in RESOLVE is defined by its list of scenario tags that are flagged as TRUE to be included in the modeling. Each Scenario Tag has an associated priority number (high number means higher priority) which allows you to define and include more than one scenario for each component type with the higher priority scenario carrying the ultimate information to be used in the case run. For example, if you have one Scenario Tag that covers the default candidate resource assumptions, but you wish to model a high-cost scenario only for wind resources, you should include the high-cost wind Scenario Tag in the list and make sure it has higher priority number compared to the default scenario. Additional inputs include specifying solver options (optional), results reporting settings (e.g., if you wish to include hourly results reporting or not), temporal and financial settings, as well as selected modeling years with the years to include for inter-period sharing.
-
-    ![Illustration of RESOLVE Case Settings and Important Parameters](_images/New_Case_Settings.png)
-
-
-20. **What are passthrough inputs?**
+18. **What are passthrough inputs?**
 
     These tables contain data that have no impact on portfolio optimization and are passed to data inputs folder solely for results summarization on the Results Viewer workbook. Examples are IEPR peak forecast and non-optimized costs that capture fixed costs for baseline resources and behind-the-meter resources.
