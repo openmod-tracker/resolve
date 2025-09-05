@@ -1,4 +1,6 @@
-## Financial Settings
+## Important Settings in Scenario Tool
+
+### Financial Settings
 
 RESOLVE optimizes net present value for the entire planning horizon. To do so, it relies on discount factors for selected modeled years. The model endogenously calculates the annual discount factors to use for each modeled year based on four pieces 
 of information:
@@ -13,9 +15,19 @@ of 2045-2064, assuming that the 2045 costs are representative of a steady-state 
 The schematic below shows how net present value is being calculated based on costs in selected modeled years:
 ![Example of RESOLVE Modeling Years and Financing Timeline](_images/Modeling_Year.jpg)
 
-## Temporal Settings
+### Temporal Settings
 
-## Representative Period Settings
+Timeseries data representing profiles for loads and resources are stored in separate CSV files under the `./data/profiles/` subfolder to keep the Scenario 
+Tool spreadsheet filesize manageable; however, the Scenario Tool contains the profile path associated with each resource parameter which point the code to the relevant CSV file. These CSVs must have the following format:
+
+| timestamp                    | value             |
+|------------------------------|-------------------|
+| [timestamp (hour beginning)] | [attribute value] |
+| ...                          | ...               |
+
+Note that for any profile relying on historical data must have at least data for the representative day weather years. The profiles get rescaled in the code to ensure that representative day-based capacity factors for solar and wind match the historical timeseries average capacity factor value. The rescaled profiles are saved in the `./data/processed/resolve/rescaled_profiles`.  
+
+### Representative Period Settings
 
 Toggle between pre-defined sets of sampled days saved in the Scenario Tool. See {ref}`timeseries-clustering for instructions on how to create new sampled days.
 
@@ -48,18 +60,3 @@ four-column, "long" orientation.
 | ...                                  | ...              | ...     | ...                 |
 
 
-## Timeseries Data
-
-Hourly timeseries data is now stored in separate CSV files under the `./data/profiles/` subfolder to keep the Scenario 
-Tool spreadsheet filesize manageable. These CSVs must have the following format:
-
-| timestamp                    | value             |
-|------------------------------|-------------------|
-| [timestamp (hour beginning)] | [attribute value] |
-| ...                          | ...               |
-
-On the Scenario Tool, you'll see certain data attributes have filepaths as their
-input, which point the code to the relevant CSV file.
-
-In the Scenario Tool, in the RESOLVE Case Setup worksheet has the user defined input selections for each case available in the following tables:
-![Example of RESOLVE Modeling Years and Financing Timeline](_images/Temporal_Financing_Settings.jpeg)
