@@ -15,7 +15,7 @@ of 2045-2064, assuming that the 2045 costs are representative of a steady-state 
 The schematic below shows how net present value is being calculated based on costs in selected modeled years:
 ![Example of RESOLVE Modeling Years and Financing Timeline](_images/Modeling_Year.jpg)
 
-### Temporal Settings
+### Timeseries Data
 
 Timeseries data representing profiles for loads and resources are stored in separate CSV files under the `./data/profiles/` subfolder to keep the Scenario 
 Tool spreadsheet filesize manageable; however, the Scenario Tool contains the profile path associated with each resource parameter which point the code to the relevant CSV file. These CSVs must have the following format:
@@ -29,9 +29,16 @@ Note that for any profile relying on historical data must have at least data for
 
 ### Representative Period Settings
 
-Toggle between pre-defined sets of sampled days saved in the Scenario Tool. See {ref}`timeseries-clustering for instructions on how to create new sampled days.
+The Timeseries Clusters worksheet in Scenario Tool contains the representative days and chronological periods covering selected weather years (typically 23 weather years in the CPUC IRP model are represented in 36 days). Note that RESOLVE representative days are created using RESOLVE Day Sampling Script provided in the RESOLVE package. 
+In order to model inter-day sharing for storage to shift energy between days in a single modeled year, RESOLVE relies on chronological timeseries mapping with the representative days. 
 
-5. **Inter-period dynamics:** Include additional chronological information to allow `RESOLVE` to shift energy between days across the modeled weather years.
+![Scenario Tool Timeseries Clusters Worksheet](_images/Rep_days.png)
+
+### Temporal Settings
+In Resolve Case Setup worksheet, you have the option to choose a set of representative day scenario (if more than one available) to include in your case run. Additionally, you can choose the years to model in RESOLVE, years to model with inter-day sharing. 
+In order to include inter-day sharing, you need to choose "inter-period sharing" for dispatch window behavior; otherwise, choose "loopback" to exclude inter-day sharing. Additionally, choose the years that you wish to include inter-day sharing for. And lastly, choose a single weather year from the weather years list (all years have the same chronological mapping with representative days, so any single weather year can be chosen in this case).
+
+![Scenario Tool Timeseries Clusters Worksheet](_images/Temporal_Settings.png)
 
 ## Scenario tagging functionality
 
