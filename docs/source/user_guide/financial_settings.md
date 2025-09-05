@@ -40,7 +40,7 @@ In order to include inter-day sharing, you need to choose "inter-period sharing"
 
 ![Scenario Tool Timeseries Clusters Worksheet](_images/Temporal_Settings.png)
 
-## Scenario tagging functionality
+### Scenario tagging functionality
 
 See {ref}`input_scenarios` for discussion about how to determine which scenario tagged data is used in a specific model run. 
 
