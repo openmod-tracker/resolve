@@ -1,6 +1,6 @@
 ## Financial Settings
 
-The model will now endogenously calculate the annual discount factors to use for each modeled year based on four pieces 
+RESOLVE optimizes net present value for the entire planning horizon. To do so, it relies on discount factors for selected modeled years. The model endogenously calculates the annual discount factors to use for each modeled year based on four pieces 
 of information:
 1. **Cost dollar year:** The dollar year that costs are input in and should be reported out in. In general, `RESOLVE` is designed 
 to be in real dollars for a specific dollar year.
@@ -10,7 +10,7 @@ of end effects after 2045 would mean that the last model year's annual discount 
 of 2045-2064, assuming that the 2045 costs are representative of a steady-state future for all end effect years.
 4. **Annual discount rate:** Real discount rate in each year
 
-
+The schematic below shows how net present value is being calculated based on costs in selected modeled years:
 ![Example of RESOLVE Modeling Years and Financing Timeline](_images/Modeling_Year.jpg)
 
 ## Temporal Settings
