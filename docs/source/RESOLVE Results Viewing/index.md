@@ -15,8 +15,8 @@ The output file size will also be dependent on the case settings and components.
 
 Users can find a Jupyter notebook script called “RV_script.ipynb” within the "Notebooks" directory of the repository. It is recommended that users use a Python version greater than v3.7.0 to use this. Once the script is opened using Jupyter Notebook or Jupyterhub, users can work with this without having to reactivate the environment or related dependencies. Note that the script is designed to work independently.
 
-```Tip
-To open Jupyter Notrebook, simply run Jupyter Notebook from Pycharm terminal and navigate to the `notebooks` folder to find the script.
+```{tip}
+To open Jupyter Notebook, simply run Jupyter Notebook from Pycharm terminal and navigate to the `notebooks` folder to find the script.
 ```
 
 As you run the first couple blocks of code, you will be asked to enter the file path of results folder and the Results Viewer Workbook itself, which will be a part of the package as well. Please note that any new case that you run, you should make sure the results are saved in the `results` folder. This is what that selection process should look like:
