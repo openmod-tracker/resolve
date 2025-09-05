@@ -48,4 +48,4 @@ For hourly dispatch charts, the resource aggregation and color coding is defined
 ![Colors and build group setup in Results Viewer](_images/a9e5f769410f85539fc45c298935ad71.png)
 
 The resource grouping that is used for hourly results aggregation is also defined in the Excel Results Viewer workbook, as a name range. An example of that is provided below:
-![Hourly Results Grouping](_images/Houlry_Res_Grouping.png)
+![Hourly Results Grouping](_images/Picture1.png)
