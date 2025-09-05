@@ -39,7 +39,7 @@ This documentation will briefly cover each step.
 
 Please file [bug reports on GitHub](https://github.com/e3-/resolve/issues/new/choose).
 
-For support from E3 staff related to the CPUC IRP proceeding, standing office hours are available on Wednesdays 9-10 AM (PST). In order to attend, you should register using [this booking link](https://forms.office.com/r/hf8GLfRZJk)
+For support from E3 staff related to the CPUC IRP proceeding, standing office hours are available on Wednesdays 9-10 AM (PST). In order to attend, you should register using [this link](https://forms.office.com/r/hf8GLfRZJk)
 
 For any other questions or more information on `RESOLVE` and E3's other modeling tools, email us: <platform@ethree.com>.
 
