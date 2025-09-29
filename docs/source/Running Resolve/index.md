@@ -9,7 +9,7 @@ Now that you have saved the data from Scenario Tool, you will have an updated da
 | processed                                         | Includes re-scaled profiles from RESOLVE which gets created the first time running a RESOLVE case with all profiles and sample days.                                                                                                                                                             |
 | settings                                          | Includes sample days in the “timeseries” subfolder and all case definitions in the “resolve” subfolder. The subfolder of “temporal_settings” is where modeling years and other temporal settings get saved.                                                                                      |
 
-Running a RESOLVE case also requires interactions ith the subfolders in the “results” folder:
+Running a RESOLVE case also requires interactions with the subfolders in the “results” folder:
 
 | Folder name | Description |
 |-------------|-------------|

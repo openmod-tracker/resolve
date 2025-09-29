@@ -13,7 +13,7 @@ The output file size will also be dependent on the case settings and components.
 
 ## Using the interactive Jupyter Notebook to Load Annual Case Results
 
-Users can find a Jupyter notebook script called “RV_script.ipynb” within the "Notebooks" directory of the repository. It is recommended that users use a Python version greater than v3.7.0 to use this. Once the script is opened using Jupyter Notebook or Jupyterhub, users can work with this without having to reactivate the environment or related dependencies. Note that the script is designed to work independently.
+Users can find a script called “RESOLVE_Annual_RV_Creation.py” within the "Notebooks" directory of the repository. It is recommended that users use a Python version greater than v3.7.0 to use this. Once the script is opened using Jupyter Notebook or Jupyterhub, users can work with this without having to reactivate the environment or related dependencies. Note that the script is designed to work independently.
 
 ```{tip}
 To open Jupyter Notebook, simply run Jupyter Notebook from Pycharm terminal and navigate to the `notebooks` folder to find the script.
@@ -35,7 +35,7 @@ After this block completes the run, the users can find the Results viewer in the
 
 ## Optional Hourly Results Processing Jupyter Notebook
 
-In addition to viewing annual results, one may be interested in viewing and analyzing hourly model results. This is only possible if the “report_hourly_results” argument in the attributes.csv file for the case is set to TRUE at the time of setting up the case, which tells RESOLVE whether to save hourly results to the case reports folder. If hourly results are included in the case reports folder, you can analyze them with the “RESOLVE Hourly Results Viewer.ipynb” Jupyter notebook within the “notebooks” directory of the kit repository. In this case, make sure to open Jupyter Notebook after activating your environment.
+In addition to viewing annual results, one may be interested in viewing and analyzing hourly model results. This is only possible if the “report_hourly_results” argument in the attributes.csv file for the case is set to TRUE at the time of setting up the case, which tells RESOLVE whether to save hourly results to the case reports folder. If hourly results are included in the case reports folder, you can analyze them with the “RESOLVE Hourly Results Viewer.py” Jupyter notebook within the “notebooks” directory of the kit repository. In this case, make sure to open Jupyter Notebook after activating your environment.
 
 ![RESOLVE dialog box where user can choose case and hourly results.](_images/8e741d826c6d418510f0afe91d88354f.png)
 
@@ -48,4 +48,4 @@ For hourly dispatch charts, the resource aggregation and color coding is defined
 ![Colors and build group setup in Results Viewer](_images/a9e5f769410f85539fc45c298935ad71.png)
 
 The resource grouping that is used for hourly results aggregation is also defined in the Excel Results Viewer workbook, as a name range. An example of that is provided below:
-![Hourly Results Grouping](_images/Picture1.png)
+![Hourly Results Grouping](_images/Houlry_Res_Grouping.png)

@@ -13,7 +13,7 @@ The core of the RESOLVE public package includes the following content that the u
 | Hourly Results Aggregation Script | Includes a Jupyter Notebook that can be toggled with an existing RESOLVE case results to review hourly results and generate aggregated files if desired.                        |
 | RESOLVE_Annual_RV_Creation  | A script to load the results of a new RESOLVE case run in the Results Viewer template.                                                                                          |
 
-Additional workbooks may also be included in a RESOLVE package if CPUC desired. In the past, some of the upstream workbooks such as baseline resource data workbook, candidate resource cost and potential workbooks have made available along with a RESOLVE typical package.
+Additional workbooks may also be included in a RESOLVE package. In the past, some of the upstream workbooks such as baseline resource data workbook, candidate resource cost and potential workbooks have made available along with a RESOLVE typical package.
 Note that RESOLVE Day Sampling Script is also made available publicly and is accessible from the RESOLVE [repository](https://github.com/e3-/resolve). This script is used to create sample days in RESOLVE. Sampled days are included in the Scenario Tool, so users should not need to interact with this script unless interested.
 
 :::{admonition} 2025-2026 CPUC IRP {octicon}`zap`
