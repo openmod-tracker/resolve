@@ -10,7 +10,7 @@ contain the root `toctree` directive.
 
 # RESOLVE
 
-Welcome to the new `RESOLVE` documentation! These docs are periodically updated and improved for better user experience. 
+Welcome to the new `RESOLVE` documentation! These docs are periodically updated and improved for better user experience. Note that for most up-to-dated information, you are encouraged to visit the Github RESOLVE [repository](https://github.com/e3-/resolve).  
 
 `RESOLVE` is a least-cost capacity expansion model that identifies optimal electricity supply portfolios through capacity 
 expansion and production simulation modeling. Optimal investment plans account for the capital costs of new resources, 
