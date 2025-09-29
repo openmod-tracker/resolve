@@ -4,9 +4,9 @@ The RESOLVE Scenario Tool is a user-centric model interface, designed to link da
 
 ### Overview of Data Flow to RESOLVE Model
 
-The main data are organized in RESOLVE upstream workbooks, most importantly, the baseline, load and candidate resource workbooks that also have duplicates of the RESOLVE template tables for easy data transfer to the RESOLVE model. These workbooks are made available if CPUC desires, but the users should not need to interact and can directly rely on Scenario Tool for reviewing or using the data.
+The main data are organized in RESOLVE upstream workbooks, and is recommended to collect and format key input datasets into template tables, most importantly for baseline, load and candidate resource data, for easy data transfer to the RESOLVE model. While these workbooks are available and accessible for review of data inputs (if CPUC desires), users should not need to edit these files and can instead directly rely on Scenario Tool for reviewing or using the data.
 
-![Illustration of data flow from upstream workbooks to RESOLVE Scenario Tool](_images/85fa70b0b069f5db5c2e6c0606aa4e2a.png)
+![Illustration of data flow from upstream workbooks to RESOLVE Scenario Tool](_images/resolve-data-flow-v2.png)
 
 Illustration of data flow from upstream workbooks to RESOLVE Scenario Tool
 
