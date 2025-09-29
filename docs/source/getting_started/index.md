@@ -105,8 +105,8 @@ We will get to this part later so the user can click 'Cancel' and move ahead for
 ----
 
 ```{tip}
-If you have downloaded the resolve package from the CPUC website and or downloaded the zipfile package, you can
-still go into pycharm - go into the Menubar -> Files -> Open -> Select the folder where you downloaded unzipped resolve
+If you have downloaded the RESOLVE package from the CPUC website and or downloaded the zipfile package, you can
+still go into pycharm - go into the Menubar -> Files -> Open -> Select the folder where you downloaded unzipped RESOLVE
 and click OK. This enables you to work with existing files and/or circumvent the cloning process.
 ```
 
