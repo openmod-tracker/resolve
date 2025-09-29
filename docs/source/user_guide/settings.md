@@ -30,7 +30,7 @@ Note that for any profile relying on historical data must have at least data for
 
 The Timeseries Clusters worksheet in Scenario Tool contains the representative days (dispatch windows) and chronological periods covering selected weather years (typically 23 weather years in the CPUC IRP model are represented in 36 days). Note that RESOLVE representative days are created using RESOLVE Day Sampling Script available in the Github RESOLVE [repository](https://github.com/e3-/resolve). 
 
-In order to model inter-day sharing for storage to shift energy between days in a single modeled year, RESOLVE relies on chronological timeseries mapping with the representative days; thus both chronological timeseries and representative days are inputs to the Scenario Tool. There is an option to run the macro available in this tab of the Scenario Tool that allows you to save the timeseries cluster settings independent from other data from the Scenario Tool; otherwise, the data will be saved along with the case settings when you run the **Export Case to CSV** macro from "RESOLVE Case Setup".
+In order to model inter-day sharing for storage to shift energy between days in a single modeled year, RESOLVE relies on chronological timeseries mapping with the representative days; thus both chronological timeseries and representative days are inputs to the Scenario Tool. There is an option to run the macro available in this tab of the Scenario Tool that allows you to save the timeseries cluster settings independent from other data from the Scenario Tool; otherwise, the data will be saved along with the case settings when you run the "Export Case to CSV" macro from the RESOLVE Case Setup tab.
 
 ![Scenario Tool Timeseries Clusters Worksheet](_images/Rep_days.png)
 

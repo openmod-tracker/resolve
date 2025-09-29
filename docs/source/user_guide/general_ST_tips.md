@@ -24,5 +24,6 @@ Here are some tips to have in mind when updating the Scenario Tool or setting up
 5. Most worksheets have small tables on the very left side that list all existing scenarios on the worksheet, as well as a list of table column names and a hyperlink for easier navigation in large data tables. The links are useful to click on and jump to the related section of interest.
 
 6. It is recommended to keep the format of the component names for new component additions to make sure they are compatible with downstream results viewer workbooks. 
-   - For example, start load components with the zone name followed by load component name. Another example is fuel names which is recommended to use zone name, fuel name followed by "_Fuel". 
+   - For example, start load components with the zone name followed by load component name. Another example is fuel names which is recommended to use zone name, fuel name followed by "_Fuel".
+   - Another example, assign one of the standard names for "RV Agg Group" column in resource tabs for any new resource you are adding. That will make sure that the resource will get aggregated in the hourly results reporting correctly. 
 
