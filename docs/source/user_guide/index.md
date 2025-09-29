@@ -3,7 +3,7 @@
 :hidden:
 
 scenario_tool
-xlwings_setting
+xlwings-setting
 settings
 Saving_Inputs
 general_ST_tips
