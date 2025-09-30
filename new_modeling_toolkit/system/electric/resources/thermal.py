@@ -14,6 +14,7 @@ from new_modeling_toolkit.core.linkage import CandidateFuelToResource
 from new_modeling_toolkit.system.electric.resources.generic import GenericResource
 from new_modeling_toolkit.system.electric.resources.generic import GenericResourceGroup
 from new_modeling_toolkit.system.electric.resources.unit_commitment import UnitCommitmentResource
+from new_modeling_toolkit.system.electric.resources.unit_commitment import UnitCommitmentResourceGroup
 
 
 class ThermalResource(GenericResource):
@@ -519,7 +520,7 @@ class ThermalResourceGroup(GenericResourceGroup, ThermalResource):
             raise ValueError(f"{self.name} Thermal Resource Group operational group needs a fuel burn slope defined.")
 
 
-class ThermalUnitCommitmentResourceGroup(GenericResourceGroup, ThermalUnitCommitmentResource):
+class ThermalUnitCommitmentResourceGroup(UnitCommitmentResourceGroup, ThermalUnitCommitmentResource):
     SAVE_PATH: ClassVar[str] = "resources/thermal/groups"
     _NAME_PREFIX: ClassVar[str] = "thermal_unit_commitment_resource_group"
     _GROUPING_CLASS = ThermalUnitCommitmentResource

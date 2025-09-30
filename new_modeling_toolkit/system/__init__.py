@@ -50,6 +50,7 @@ from new_modeling_toolkit.system.electric.reserve import Reserve
 from new_modeling_toolkit.system.electric.resource_group import ResourceGroup
 from new_modeling_toolkit.system.electric.resources import ElectricResource
 from new_modeling_toolkit.system.electric.resources import FlexLoadResource
+from new_modeling_toolkit.system.electric.resources import FlexLoadResourceGroup
 from new_modeling_toolkit.system.electric.resources import GenericResource
 from new_modeling_toolkit.system.electric.resources import HybridStorageResource
 from new_modeling_toolkit.system.electric.resources import HybridVariableResource
@@ -136,6 +137,7 @@ __all__ = [
     "VariableResource",
     "SolarResource",
     "WindResource",
+    "FlexLoadResourceGroup",
     "GenericResourceGroup",
     "HydroResourceGroup",
     "StorageResourceGroup",
@@ -499,6 +501,10 @@ class System(Component):
     @property
     def resource_groups(self):
         return {k: v for k, v in self.asset_groups.items() if isinstance(v, GenericResourceGroup)}
+
+    @property
+    def flex_load_resource_groups(self):
+        return {k: v for k, v in self.asset_groups.items() if isinstance(v, FlexLoadResourceGroup)}
 
     @property
     def generic_resource_groups(self):
