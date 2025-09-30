@@ -87,7 +87,7 @@ class Policy(component.Component):
     custom_constraints: Annotated[
         dict[str, CustomConstraintLinkage], Metadata(linkage_order=3, default_exclude=True)
     ] = {}
-    slack_penalty: float = Field(default=1_000_000, description=("Cost to model of relaxing policy ($) "))
+    slack_penalty: float = Field(default=100_000_000, description=("Cost to model of relaxing policy ($) "))
     type: Literal["emissions", "energy", "prm", "erm"] = Field(
         description=("Type of policy. Can be related to energy, emissions, prm, erm")
     )

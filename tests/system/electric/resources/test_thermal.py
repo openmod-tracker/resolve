@@ -4,6 +4,7 @@ import pytest
 from new_modeling_toolkit.system import ThermalResourceGroup
 from new_modeling_toolkit.system.electric.resources import ThermalResource
 from new_modeling_toolkit.system.electric.resources.thermal import ThermalUnitCommitmentResource
+from tests.system.component_test_template import ComponentTestTemplate
 from tests.system.electric.resources import test_generic
 from tests.system.electric.resources import test_unit_commitment
 
@@ -652,6 +653,148 @@ class TestThermalUnitCommitmentResource(test_unit_commitment.TestUnitCommitmentR
         block.power_output[first_index].fix(25)
         assert block.total_power_output_by_fuel_constraint[first_index].body() == 5
         assert not block.total_power_output_by_fuel_constraint[first_index].expr()
+
+
+class TestThermalResourceUnitCommitmentSingleUnit(ComponentTestTemplate):
+    _COMPONENT_CLASS = ThermalResource
+    _COMPONENT_NAME = "ThermalUnitCommitmentResourceSingleUnit"
+    _SYSTEM_COMPONENT_DICT_NAME = "thermal_uc_resources"
+
+    @pytest.mark.parametrize(
+        "committed_units, committed_capacity, expected_body, expected_expr",
+        [
+            # If not committed, committed_capacity must be 0 (<= 0*max_potential)
+            pytest.param(0, 0.0, 0.0, True, id="not_committed_zero_capacity"),
+            pytest.param(0, 10.0, 10.0, False, id="not_committed_positive_capacity_violates"),
+            # If committed (1), capacity must be <= fixed max_potential (=300)
+            pytest.param(1, 100.0, 100.0 - 300.0, True, id="committed_within_max"),
+            pytest.param(1, 300.0, 0.0, True, id="committed_equal_max"),
+            pytest.param(1, 310.0, 10.0, False, id="committed_above_max"),
+        ],
+    )
+    def test_committed_capacity_ub(
+        self,
+        make_component_with_block_copy,
+        first_index,
+        committed_units,
+        committed_capacity,
+        expected_body,
+        expected_expr,
+    ):
+        """
+        Unit test for UnitCommitmentResource._committed_capacity_ub():
+        committed_capacity[yt] <= max_potential[y] * committed_units[yt]
+
+        We directly set/fix the relevant variables and parameters on the resource block and
+        verify the constructed constraint's body, bound, and truthiness without solving.
+        """
+        resource = make_component_with_block_copy()
+        b = resource.formulation_block
+        modeled_year, dispatch_window, timestamp = first_index
+
+        # Ensure SINGLE_UNIT path is active for committed_capacity var and constraint
+        # The fixture should already be configured appropriately in tests; we only set parameters/vars.
+        b.committed_units[modeled_year, dispatch_window, timestamp].fix(committed_units)
+        b.committed_capacity[modeled_year, dispatch_window, timestamp].fix(committed_capacity)
+
+        c = b.committed_capacity_ub[modeled_year, dispatch_window, timestamp]
+        # Upper bound is None for <=; evaluation happens via expr()
+        assert c.upper() == 0
+        # Body is LHS - RHS
+        assert c.body() == expected_body
+        # expr(): True if inequality satisfied/binding, False if violated
+        assert bool(c.expr()) is expected_expr
+
+    @pytest.mark.parametrize(
+        "unit_size, committed_capacity, expected_body, expected_expr",
+        [
+            # committed_capacity <= unit_size (satisfied)
+            pytest.param(100.0, 50.0, 50.0 - 100.0, True, id="below_unit_size"),
+            # committed_capacity == unit_size (binding)
+            pytest.param(100.0, 100.0, 0.0, True, id="equal_unit_size"),
+            # committed_capacity > unit_size (violation)
+            pytest.param(100.0, 110.0, 10.0, False, id="above_unit_size"),
+        ],
+    )
+    def test_committed_capacity_unit_size_max(
+        self,
+        make_component_with_block_copy,
+        first_index,
+        unit_size,
+        committed_capacity,
+        expected_body,
+        expected_expr,
+    ):
+        """
+        Unit test for UnitCommitmentResource._committed_capacity_unit_size_max():
+        committed_capacity[yt] <= unit_size[y]
+
+        For SINGLE_UNIT mode, unit_size is defined as an Expression equal to operational_capacity[year].
+        We explicitly set operational_capacity for the modeled year to a chosen unit_size and fix
+        committed_capacity, then verify the constraint body and satisfaction.
+        """
+        resource = make_component_with_block_copy()
+        b = resource.formulation_block
+        modeled_year, dispatch_window, timestamp = first_index
+
+        # Set the unit size via operational_capacity (since SINGLE_UNIT uses dynamic unit_size Expression)
+        b.operational_capacity[modeled_year] = unit_size
+        # Fix committed_capacity at the specific timepoint
+        b.committed_capacity[modeled_year, dispatch_window, timestamp].fix(committed_capacity)
+
+        c = b.committed_capacity_unit_size_max[modeled_year, dispatch_window, timestamp]
+        assert c.upper() == 0
+        assert c.body() == expected_body  # LHS - RHS = committed_capacity - unit_size
+        assert bool(c.expr()) is expected_expr
+
+    @pytest.mark.parametrize(
+        "unit_size, committed_units, committed_capacity, expected_body, expected_expr",
+        [
+            # When not committed (0), RHS = unit_size - max_potential.
+            # With max_potential large (e.g., 300), constraint relaxes; any nonnegative committed_capacity satisfies.
+            pytest.param(100.0, 0, 0.0, (100.0 - 300.0) - 0, True, id="not_committed_zero_capacity_relaxed"),
+            pytest.param(100.0, 0, 50.0, (100.0 - 300.0) - 50, True, id="not_committed_positive_capacity_relaxed"),
+            # When committed (1), constraint enforces committed_capacity >= unit_size.
+            pytest.param(100.0, 1, 90.0, 100.0 - 90, False, id="committed_below_unit_size"),
+            pytest.param(100.0, 1, 100.0, 0.0, True, id="committed_equal_unit_size"),
+            pytest.param(100.0, 1, 120.0, -20.0, True, id="committed_above_unit_size"),
+        ],
+    )
+    def test_committed_capacity_unit_size_min(
+        self,
+        make_component_with_block_copy,
+        first_index,
+        unit_size,
+        committed_units,
+        committed_capacity,
+        expected_body,
+        expected_expr,
+    ):
+        """
+        Unit test for UnitCommitmentResource._committed_capacity_unit_size_min():
+        committed_capacity[yt] >= unit_size[y] - max_potential[y] * (1 - committed_units[yt])
+
+        For SINGLE_UNIT, unit_size is dynamic via operational_capacity. We set operational_capacity,
+        max_potential for the modeled year, fix committed_units and committed_capacity, and verify the
+        constraint body/value and truthiness.
+        """
+        resource = make_component_with_block_copy()
+        b = resource.formulation_block
+        modeled_year, dispatch_window, timestamp = first_index
+
+        # Configure parameters/expressions
+        b.operational_capacity[modeled_year] = unit_size
+
+        # Fix variables
+        b.committed_units[modeled_year, dispatch_window, timestamp].fix(committed_units)
+        b.committed_capacity[modeled_year, dispatch_window, timestamp].fix(committed_capacity)
+
+        c = b.committed_capacity_unit_size_min[modeled_year, dispatch_window, timestamp]
+        # Lower-bound constraint has lower() == 0 after moving all to LHS
+        assert c.upper() == 0
+        # Body is LHS - RHS
+        assert c.body() == expected_body
+        assert bool(c.expr()) is expected_expr
 
 
 class TestThermalResourceGroup(test_generic.TestGenericResourceGroup, TestThermalResource):
