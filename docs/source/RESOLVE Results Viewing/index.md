@@ -13,25 +13,29 @@ The output file size will also be dependent on the case settings and components.
 
 ## Using the interactive Jupyter Notebook to Load Annual Case Results
 
-Users can find a script called “RESOLVE_Annual_RV_Creation.py” within the "Notebooks" directory of the repository. It is recommended that users use a Python version greater than v3.7.0 to use this. Once the script is opened using Jupyter Notebook or Jupyterhub, users can work with this without having to reactivate the environment or related dependencies. Note that the script is designed to work independently.
+Users can find a script called “RESOLVE_Annual_RV_Creation.py” within the "Notebooks" directory of the repository. It is recommended that users use a Python version greater than v3.7.0 to use this. To use the script, activate your RESOLVE environment, then open the script from Jupyter Notebook or Jupyterhub. Note that the script is designed to work independently.
 
 ```{tip}
-To open Jupyter Notebook, simply run Jupyter Notebook from Pycharm terminal and navigate to the `notebooks` folder to find the script.
+To open Jupyter Notebook, simply activate the environmnet from Pycharm terminal, then run "Jupyter Notebook" command and navigate to the `notebooks` folder to find the script.
 ```
 
 As you run the first couple blocks of code, you will be asked to enter the file path of results folder and the Results Viewer Workbook itself, which will be a part of the package as well. Please note that any new case that you run, you should make sure the results are saved in the `results` folder. This is what that selection process should look like:
 
 ![Path selection for RESOLVE Results Viewer template and Case results folder](_images/2c6f3edd7cda9192962652f8a214a64f.png)
 
-Once you have confirmed the path selections, you would need to add the subfolder names of the case (typically the name of the case and the timestamp) that you want loaded. These inputs will go here:
+The next block automatically identifies the components that are specific to the selected case, and shows the list of those components that are getting mapped to in the Results Viewer template you linked in the beginning. Additionally, standard sheet mapping is shown for user to optionally edit them if desires.
 
-![Example of case results sufolder names](_images/65aa4f936e8f28af02ced7c79cae48e3.png)
+![List of components mapped to Results Viewer worksheets](_images/Component_Names_RV.png)
 
-Note that users have the option to select loading one case at a time or a batch of cases. It is recommended that starting out users select just the one case option. Once this is done, users can move ahead to the `generate_rv` function. If you choose to save results viewers for multiple cases at same time, you should specify `generate_multiple_rvs and comment our the single RV option. After this point, the script will start loading in the RV and the script will provide updates as follows:
+After that, the script shows full sheet mapping for review before loading all case results into the workbook.
+
+![List of components mapped to Results Viewer worksheets](_images/Review_heet_mapping_RV.png)
+
+Next, it starts to load the case results to the Results Viewer template and shows the progress as the picture below demonstrates. 
 
 ![Logs shown when a case is successfully loaded in Results Viewer](_images/56291fc65b012f9da9e15988c6cb75e2.png)
 
-After this block completes the run, the users can find the Results viewer in the specified folder. Note that this could be a computationally intense process and depending on the size of the case can take about 30 minutes to load one case.
+After this block completes the run, the users can find the Results Viewer saved in the same folder as the template Results Viewer was selected earlier. Note that this could be a computationally intense process and depending on the size of the case can take up to 30 minutes to load one case.
 
 ## Optional Hourly Results Processing Jupyter Notebook
 
