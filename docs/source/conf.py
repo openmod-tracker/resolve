@@ -68,7 +68,7 @@ html_favicon = "_images/e3-logo.ico"
 html_static_path = ["_static"]
 html_css_files = ["css/furo-e3.css"]
 
-html_title = "Resolve"
+html_title = "RESOLVE"
 
 
 # Dark mode colors need to be declared as theme "variables" here, which then can be called in furo-e3.css
